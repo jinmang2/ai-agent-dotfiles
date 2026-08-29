@@ -25,6 +25,7 @@ LINKS=$(cat <<'LIST'
 agent/window-label.sh|$HOME/.local/bin/agent-window-label
 agent/profiles.conf|$HOME/.config/agent-profiles.conf
 shell/agents.sh|$HOME/.config/agent-dotfiles/agents.sh
+shell/aliases.sh|$HOME/.config/agent-dotfiles/aliases.sh
 tmux/tmux.conf|$HOME/.tmux.conf
 gemini/GEMINI.md|$HOME/.gemini/GEMINI.md
 LIST
@@ -79,10 +80,23 @@ if [ -f "$OVERLAY" ]; then
     elif [ -f "$DST_SETTINGS" ] && "$REPO/scripts/merge-settings.py" --check "$SRC_SETTINGS" "$OVERLAY" "$DST_SETTINGS"; then
       printf '  ok     claude/settings.json  (병합 생성 + %s)\n' "local/hosts/$HOST/settings-overlay.json"; ok=$((ok+1))
     else
-      printf '  갱신필요 claude/settings.json  (병합 결과와 다름 → ./install.sh)\n'; bad=$((bad+1))
+      printf '  갱신필요 claude/settings.json  (병합 결과와 다름 → ./install.sh)\n'
+      "$REPO/scripts/merge-settings.py" --diff "$SRC_SETTINGS" "$OVERLAY" "$DST_SETTINGS"
+      bad=$((bad+1))
     fi
+  elif [ -f "$DST_SETTINGS" ] && [ ! -L "$DST_SETTINGS" ] \
+       && "$REPO/scripts/merge-settings.py" --check "$SRC_SETTINGS" "$OVERLAY" "$DST_SETTINGS"; then
+    # 이미 병합 결과와 같다. 다시 쓰면 백업 파일만 쌓이므로 건드리지 않는다.
+    printf '  ok     claude/settings.json  (병합 생성 + local/hosts/%s/settings-overlay.json)\n' "$HOST"
+    ok=$((ok+1))
   else
     mkdir -p "$(dirname "$DST_SETTINGS")"
+    # 덮어쓰기 전에 무엇이 달라지는지 보여준다. 백업은 남지만, 손으로 고친 게
+    # 사라지는 걸 나중에 알아채는 것보다 지금 보이는 게 낫다.
+    if [ -f "$DST_SETTINGS" ] && ! "$REPO/scripts/merge-settings.py" --check "$SRC_SETTINGS" "$OVERLAY" "$DST_SETTINGS"; then
+      printf '  claude/settings.json 이 이렇게 바뀝니다:\n'
+      "$REPO/scripts/merge-settings.py" --diff "$SRC_SETTINGS" "$OVERLAY" "$DST_SETTINGS"
+    fi
     if "$REPO/scripts/merge-settings.py" "$SRC_SETTINGS" "$OVERLAY" "$DST_SETTINGS.tmp-$stamp"; then
       backup_or_clear "$DST_SETTINGS"
       mv "$DST_SETTINGS.tmp-$stamp" "$DST_SETTINGS" \
@@ -120,14 +134,30 @@ if grep -qE '^\s*alias\s+claude-[a-z]+=' "$HOME/.bashrc" 2>/dev/null; then
   fi
 fi
 
-if [ "$CHECK" = 0 ]; then
-  if grep -q 'agent-dotfiles/agents.sh' "$HOME/.bashrc" 2>/dev/null; then
-    printf '  ok     .bashrc (이미 등록됨)\n'
+# 스니펫은 센티넬로 감싼 블록 하나다. 있으면 통째로 갈아끼우고, 없으면 덧붙인다.
+# 그래야 항목이 늘어도 .bashrc 에 줄이 쌓이지 않는다.
+bashrc_block_current() {
+  [ -f "$HOME/.bashrc" ] || return 1
+  sed -n '/^# >>> ai-agent-dotfiles >>>$/,/^# <<< ai-agent-dotfiles <<<$/p' "$HOME/.bashrc"
+}
+
+if [ "$(bashrc_block_current)" = "$(cat "$REPO/shell/bashrc.snippet")" ]; then
+  printf '  ok     .bashrc\n'; [ "$CHECK" = 1 ] && ok=$((ok+1))
+elif [ "$CHECK" = 1 ]; then
+  bad=$((bad+1))
+  bashrc_block_current | grep -q . && printf '  갱신필요 .bashrc 블록  (→ ./install.sh)\n' \
+                                   || printf '  미설치 .bashrc 블록\n'
+else
+  cp "$HOME/.bashrc" "$HOME/.bashrc.pre-install-$stamp" 2>/dev/null
+  if bashrc_block_current | grep -q .; then
+    sed -i '/^# >>> ai-agent-dotfiles >>>$/,/^# <<< ai-agent-dotfiles <<</d' "$HOME/.bashrc"
+    printf '  갱신   .bashrc 블록\n'
   else
-    cp "$HOME/.bashrc" "$HOME/.bashrc.pre-install-$stamp" 2>/dev/null
-    { echo; cat "$REPO/shell/bashrc.snippet"; } >> "$HOME/.bashrc" \
-      && printf '  추가   .bashrc 에 source 한 줄\n' || rc=1
+    # 센티넬 없이 예전 방식으로 넣은 source 한 줄이 있으면 지운다 (중복 방지)
+    sed -i '/agent-dotfiles\/agents\.sh/d; /^# Claude Code 다중 계정/d' "$HOME/.bashrc"
+    printf '  추가   .bashrc 블록\n'
   fi
+  { echo; cat "$REPO/shell/bashrc.snippet"; } >> "$HOME/.bashrc" || rc=1
 fi
 
 # ── local/ 서브모듈 안내 ──────────────────────────────────────────────────

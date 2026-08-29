@@ -97,6 +97,56 @@ _claude_define_account_runners() {
 }
 _claude_define_account_runners
 
+# ── 창 이름: 셸이 주인일 때 ──────────────────────────────────────────────
+# 에이전트가 그 창을 떠났다는 이벤트는 없다. Claude Code 의 Stop 훅은 턴 끝에
+# 불릴 뿐이고, 강제 종료되면 아무 훅도 안 불린다. 그래서 종료 뒤에도 ✅🔵repo
+# 가 그대로 굳는다.
+#
+# 대신 "셸이 프롬프트를 그렸다" 를 쓴다 — 그건 그 창에 전경 프로그램이 없을
+# 때만 일어나므로 정확히 "에이전트가 없다" 와 같다. 에이전트 실행 중에는
+# 프롬프트가 안 그려지니 훅과 싸우지 않는다.
+#
+#   셸이 주인   ->  이모지 없이 이름만      (여기)
+#   에이전트    ->  ⏳🔵 붙은 이름          (agent/window-label.sh)
+#
+# 그래서 이모지가 붙어 있으면 그 창에 에이전트가 살아있다는 뜻이 된다.
+declare -A _CC_LABEL_CACHE=()
+
+_cc_shell_window_name() {
+  [ -n "${TMUX_PANE:-}" ] || return 0
+
+  local out cur manual want root
+  out=$(tmux display -p -t "$TMUX_PANE" "#{window_name}"$'\t'"#{@cc_label}" 2>/dev/null) || return 0
+  IFS=$'\t' read -r cur manual <<< "$out"
+
+  if [ -n "$manual" ]; then
+    want=$manual                      # ccname 으로 고정한 작업명이 최우선
+  else
+    want=${_CC_LABEL_CACHE[$PWD]-}    # git 호출은 디렉토리당 한 번만
+    if [ -z "$want" ]; then
+      if root=$(git rev-parse --show-toplevel 2>/dev/null) && [ -n "$root" ]; then
+        want=${root##*/}
+      elif [ "$PWD" = "$HOME" ]; then
+        want='~'
+      else
+        want=${PWD##*/}
+      fi
+      [ ${#want} -gt 24 ] && want="${want:0:23}…"
+      _CC_LABEL_CACHE[$PWD]=$want
+    fi
+  fi
+
+  [ "$cur" = "$want" ] && return 0    # 이미 맞으면 tmux 호출 없이 끝
+  tmux rename-window -t "$TMUX_PANE" "$want" 2>/dev/null
+  tmux set -uw -t "$TMUX_PANE" @cc 2>/dev/null   # 다음 에이전트가 깨끗하게 시작하도록
+}
+
+# 중복 등록 방지 (agents.sh 를 다시 source 해도 안전)
+case "${PROMPT_COMMAND:-}" in
+  *_cc_shell_window_name*) ;;
+  *) PROMPT_COMMAND="_cc_shell_window_name${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+esac
+
 # 현재 tmux 창의 작업명을 고정/해제.  Claude Code 안에서는 `!ccname 작업명` 으로.
 ccname() {
   if [ -z "${TMUX_PANE:-}" ]; then echo "tmux 안에서만 동작합니다" >&2; return 1; fi

@@ -47,11 +47,23 @@ claude/settings.json                          공용
 직접 고쳐도 다음 `./install.sh` 에서 덮어쓰인다. 고칠 곳은 둘 중 하나다:
 공용이면 `claude/settings.json`, 이 머신만이면 오버레이.
 
-`./install.sh --check` 가 어느 모드인지 알려준다.
+`./install.sh --check` 가 어느 모드인지 알려주고, 어긋나 있으면 **무엇이 달라지는지**
+diff 로 보여준다. 설치 시점에도 덮어쓰기 직전에 같은 diff 를 찍는다.
+
+```
+  갱신필요 claude/settings.json  (병합 결과와 다름 → ./install.sh)
+    변경  permissions.allow  (21개 -> 20개)
+            - "Bash(내가 손으로 넣은 규칙)"
+```
+
+백업(`.pre-install-<타임스탬프>`)은 그대로 남지만, 사라지는 걸 나중에 알아채는 것보다
+지금 보이는 게 낫다. 이미 병합 결과와 같으면 다시 쓰지 않으므로 백업이 쌓이지 않는다.
 
 ### 병합 규칙
 
 `scripts/merge-settings.py`. 항상 공용부터 다시 만들기 때문에 몇 번 돌려도 결과가 같다.
+규칙을 고칠 일이 있으면 `python3 scripts/test-merge-settings.py` 를 먼저 돌린다 —
+권한 한 줄이 조용히 사라지는 종류의 버그는 다음에 승인 프롬프트가 뜰 때까지 모른다.
 
 | 타입 | 규칙 |
 |---|---|

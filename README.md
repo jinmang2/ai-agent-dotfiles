@@ -2,8 +2,13 @@
 
 Claude Code · Codex CLI · Gemini · tmux · 셸 설정. 새 머신에서 `clone` + `install.sh` 로 선다.
 
-목표는 설정 보관이 아니라 **프레임워크(OMC/OMX)에 기대지 않고 직접 다루는 것**이다.
-훅·스킬·서브에이전트·마켓플레이스를 해체해서 실제로 쓰는 부분만 내 것으로 가져간다.
+목표는 설정 보관이 아니라 **내 것과 남의 것의 경계를 아는 것**이다.
+
+프레임워크(OMC · superpowers · gstack …)는 계속 쓴다 — 실제로 플러그인 6개를 켜둔다.
+다만 그것들이 훅·스킬·서브에이전트·마켓플레이스로 *무엇을 하고 있는지* 알고 쓰고,
+재설치로 복원되는 것과 내가 만든 것을 섞지 않는다. 그래서 이 저장소는 작다.
+저장소에 든 건 대부분 프레임워크가 안 해주는 것들이다 — 창 이름, 다중 계정,
+머신별 설정 병합.
 
 머신이 여러 대라는 걸 전제로 한다. 공용 메커니즘은 이 저장소에, 머신 고유 값은
 비공개 서브모듈의 `local/hosts/<호스트>/` 에 둔다 — `docs/machines.md`.
@@ -49,8 +54,13 @@ codex/          Codex CLI 전용
   README.md              적용 절차와 신뢰 모델
 gemini/GEMINI.md
 tmux/tmux.conf
-shell/          agents.sh · bashrc.snippet
-scripts/        merge-settings.py   공용 settings + 머신 오버레이 병합
+shell/
+  agents.sh          다중 계정 · ccname · 창 이름(셸 쪽)
+  aliases.sh         ll · gpuw · t
+  bashrc.snippet     .bashrc 에 들어가는 블록
+scripts/
+  merge-settings.py       공용 settings + 머신 오버레이 병합
+  test-merge-settings.py  그 병합 규칙의 테스트 (22개)
 docs/           레퍼런스
   hooks.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
 local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
@@ -65,6 +75,7 @@ local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
 | `agent/window-label.sh` | 심링크 | `~/.local/bin/agent-window-label` |
 | `agent/profiles.conf` | 심링크 | `~/.config/agent-profiles.conf` |
 | `shell/agents.sh` | 심링크 | `~/.config/agent-dotfiles/agents.sh` |
+| `shell/aliases.sh` | 심링크 | `~/.config/agent-dotfiles/aliases.sh` |
 | `tmux/tmux.conf` | 심링크 | `~/.tmux.conf` |
 | `gemini/GEMINI.md` | 심링크 | `~/.gemini/GEMINI.md` |
 | `claude/settings.json` | 심링크 **또는 병합** | `~/.claude/settings.json` |
@@ -93,26 +104,48 @@ claude/settings.json                            공용
 ## tmux 창 이름
 
 ```
-⏳🔵myrepo        ⏳ 작업중  ❓ 입력대기  ✅ 완료
-⏳🟣client-api    🔵 claude  🟣 claude-team  🟠 codex
-⏳🟠client-api
+1:myrepo          이모지 없음 = 셸.  cd 하면 따라간다
+2:~/dl
+3:⏳🔵myrepo       이모지 있음 = 그 창에 에이전트가 살아있다
+4:❓🟠client-api
+
+⏳ 작업중  ❓ 입력대기  ✅ 완료   /   🔵 claude  🟣 claude-team  🟠 codex
 ```
 
+**주인이 둘이다.** 에이전트가 창을 점유하면 훅이 이름을 쥐고, 셸로 돌아오면
+`PROMPT_COMMAND` 가 쥔다. 프롬프트는 전경 프로그램이 없을 때만 그려지므로
+둘이 겹치지 않는다.
+
+이 구조가 필요한 이유: **에이전트가 창을 떠났다는 이벤트가 없다.** Claude Code 의
+`Stop` 훅은 턴 끝에 불릴 뿐이고 강제 종료되면 아무 훅도 안 불린다. 예전엔 종료
+후에도 `✅🔵myrepo` 가 그대로 굳었다. 지금은 셸 프롬프트가 그려지는 순간 이모지가
+빠진다 — 그래서 **이모지 유무가 에이전트 생존 여부를 뜻하게 됐다.**
+
+라벨 우선순위는 수동 작업명 > git 저장소 이름 > `~` > 디렉토리 이름.
+브랜치는 일부러 안 쓴다 (수시로 바뀌어 식별에 도움이 안 된다).
 Claude Code 안에서 `!ccname 결제-마이그레이션` 으로 작업명을 고정, `!ccname --clear` 로 해제.
-라벨 우선순위는 수동 작업명 > git 저장소 이름 > `~` > 디렉토리 이름. 브랜치는 일부러 안 쓴다.
 
 `.tmux.conf` 의 `automatic-rename off` 가 없으면 tmux 가 창 이름을 계속 덮어쓴다.
-tmux 설정과 훅은 이 지점에서 결합돼 있다.
+tmux 설정과 훅과 셸은 이 지점에서 결합돼 있다.
+
+비용은 프롬프트당 5.6ms (이름이 이미 맞을 때), 바꿔야 하면 18ms. git 호출은
+디렉토리별로 캐시해 한 번만 돈다. SSH 로 다른 머신에 들어간 창은 원격 셸이라
+로컬 tmux 이름을 못 바꾼다 — 알려진 한계다.
 
 ## 명령
 
 | 명령 | 하는 일 |
 |---|---|
+| `t` | tmux 세션 진입. 인자 없으면 목록에서 고르고, 없으면 저장소 이름으로 생성 |
+| `t <이름>` | 그 이름으로 붙거나 만든다 |
+| `ll` | `ls -alFh --color=auto --group-directories-first` |
+| `gpuw` | `watch -n1 nvidia-smi` |
 | `claude-accounts` | 계정별 로그인 / 공유 링크 상태 |
 | `claude-account-link team` | 끊긴 공유 링크 복구 |
 | `claude-team` | team 계정으로 Claude Code 실행 |
 | `ccname <작업명>` | 창 작업명 고정 (`--clear` 해제) |
-| `./install.sh --check` | 저장소 ↔ 설치 위치 링크 점검 |
+| `./install.sh --check` | 저장소 ↔ 설치 위치 점검. 어긋나면 무엇이 달라지는지 diff 출력 |
+| `python3 scripts/test-merge-settings.py` | settings 병합 규칙 테스트 |
 
 ## 다중 계정
 
@@ -157,11 +190,15 @@ gstack 이 없으면 `settings.json` 의 `AskUserQuestion` 훅 3개만 조용히
   `./install.sh` 로 복구한다. 기존 내용은 `.pre-install-<타임스탬프>` 로 보존된다.
 - **오버레이가 있으면 `~/.claude/settings.json` 은 생성물이다.** 거기서 직접 고치면
   다음 `./install.sh` 에 덮어쓰인다. 공용이면 `claude/settings.json`, 이 머신만이면
-  오버레이를 고친다.
+  오버레이를 고친다. Claude Code 가 "Yes, and don't ask again" 으로 거기에 직접
+  쓰는 경우도 있으니, `--check` 와 설치 시점에 **무엇이 사라지는지 diff 로 보여준다.**
+  이미 병합 결과와 같으면 다시 쓰지 않는다 (백업 파일이 쌓이지 않도록).
 - **`~/.claude/settings.local.json` 은 읽히지 않는다.** user 스코프엔 그런 파일이 없다.
   도구용 환경변수는 `shell/agents.sh` 에서 export 한다.
 - **셸 함수는 대화형 셸에서만 산다.** `.bashrc` 는 비대화형이면 앞부분에서 `return` 한다.
-  새 창을 열거나 `source ~/.bashrc`.
+  새 창을 열거나 `source ~/.bashrc`. 창 이름도 같은 이유로 대화형 셸에서만 갱신된다.
+- **`.bashrc` 블록은 통째로 갈아끼워진다.** `# >>> ai-agent-dotfiles >>>` 와
+  `# <<<` 사이는 `install.sh` 소유다. 거기에 직접 쓴 건 다음 설치에 사라진다.
 - **alias 가 함수를 가린다.** 예전에 손으로 넣은 `alias claude-team=...` 이 남아 있으면
   `agents.sh` 의 함수 대신 그게 잡힌다. `install.sh` 가 찾아서 주석 처리한다.
 - **Codex 훅은 신뢰 승인이 필요하다.** `~/.codex/hooks.json` 배열에 항목을 끼워넣으면
