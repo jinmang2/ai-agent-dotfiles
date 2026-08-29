@@ -1,0 +1,18 @@
+# 이 저장소에는 비밀정보가 들어오면 안 된다. 방어용 규칙.
+*credential*
+*.token
+*secret*
+*.pem
+*.key
+
+# 실행 상태 / 임시
+*.tmp.*
+*.detached-*
+*.pre-install-*
+.omc/
+.DS_Store
+
+# ── 이 머신의 인벤토리 (공개 금지) ────────────────────
+# tailnet 호스트/IP, 프로젝트명, conda env, 실제 경로가 든 승인 규칙 등.
+# 저장소를 private 로 두면 이 줄들을 지우고 커밋해도 된다.
+local/

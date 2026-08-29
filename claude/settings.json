@@ -1,0 +1,137 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "model": "opus[1m]",
+  "permissions": {
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git remote -v)",
+      "Bash(command -v *)",
+      "Bash(nvidia-smi *)",
+      "Bash(ps -eo *)",
+      "Bash(df -h *)",
+      "Bash(du -sh *)",
+      "Bash(tmux ls)",
+      "Bash(tailscale status)",
+      "Bash(gh auth status)",
+      "Bash(gh repo view *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh issue list *)",
+      "Bash(~/ai-agent-dotfiles/install.sh --check)"
+    ]
+  },
+  "outputStyle": "korean-fluent",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "(AskUserQuestion|mcp__.*__AskUserQuestion)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/skills/gstack/hosts/claude/hooks/question-preference-hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "(AskUserQuestion|mcp__.*__AskUserQuestion)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/skills/gstack/hosts/claude/hooks/question-log-hook",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.claude/skills/gstack/hosts/claude/hooks/auq-error-fallback-hook",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.local/bin/agent-window-label ❓ waiting",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.local/bin/agent-window-label ✅ done",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs"
+  },
+  "enabledPlugins": {
+    "oh-my-claudecode@omc": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "omc": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/Yeachan-Heo/oh-my-claudecode.git"
+      }
+    }
+  },
+  "theme": "dark",
+  "agentPushNotifEnabled": true
+}

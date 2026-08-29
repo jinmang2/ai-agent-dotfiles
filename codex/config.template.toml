@@ -1,0 +1,49 @@
+# ~/.codex/config.toml 이식 가능 부분만.
+#   기계 고유 항목은 여기 없다 (아래 "제외" 참고). omx setup 이 다시 만든다.
+#   적용: 이 파일 내용을 ~/.codex/config.toml 에 병합. 이미 있는 키는 덮어쓰지 말 것.
+
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
+model_context_window = 250000
+model_auto_compact_token_limit = 200000
+suppress_unstable_features_warning = true
+
+[features]
+multi_agent = true
+child_agents_md = true
+hooks = true
+goals = true
+
+[shell_environment_policy.set]
+USE_OMX_EXPLORE_CMD = "0"
+
+[agents]
+max_threads = 6
+max_depth = 2
+
+[tui]
+status_line = [
+  "model-with-reasoning", "git-branch", "context-remaining",
+  "total-input-tokens", "total-output-tokens",
+  "five-hour-limit", "weekly-limit",
+]
+
+# ── 의도적으로 제외한 기계 고유 항목 ──────────────────────
+#
+#   notify = ["node", "/home/<user>/.nvm/versions/node/vXX/lib/node_modules/..."]
+#       nvm 버전이 박힌 절대경로. 새 머신에서 노드 버전이 다르면 깨진다.
+#       omx setup 이 그 머신에 맞게 다시 쓴다.
+#
+#   developer_instructions = "..."
+#       OMX 가 생성. omx setup 이 다시 쓴다.
+#
+#   [projects."/경로/프로젝트"]  trust_level = "trusted"
+#       프로젝트 경로별 신뢰. 머신마다 경로가 다르다.
+#       새 머신에서는 해당 디렉토리에서 codex 를 처음 실행할 때 직접 승인한다.
+#
+#   [hooks.state."...:pre_tool_use:0:0"]  trusted_hash = "sha256:..."
+#       훅 정의의 해시. 훅 파일이 바뀌면 무효가 된다.
+#       새 머신에서는 /hooks 로 직접 승인해야 하며, 복사해봐야 소용이 없다.
+#
+#   [tui.model_availability_nux]
+#       UI 안내 표시 횟수 카운터. 순수 로컬 상태.

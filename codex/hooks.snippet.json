@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "~/.codex/hooks.json 의 \"hooks\" 객체에 병합할 항목.",
+    "그대로 덮어쓰지 말 것 — 기존 OMX 훅과 신뢰 상태가 이미 들어있다.",
+    "적용 절차는 codex/README.md 참고. 적용 후 Codex 에서 /hooks 로 신뢰 승인 필요."
+  ],
+  "UserPromptSubmit": [
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy" } ] }
+  ],
+  "PermissionRequest": [
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ❓ waiting" } ] }
+  ],
+  "PostToolUse": [
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy" } ] }
+  ],
+  "Stop": [
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ✅ done" } ] }
+  ]
+}
