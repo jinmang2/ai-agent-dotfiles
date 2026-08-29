@@ -17,8 +17,8 @@ agent/window-label.sh:$HOME/.local/bin/agent-window-label
 agent/profiles.conf:$HOME/.config/agent-profiles.conf
 shell/agents.sh:$HOME/.config/agent-dotfiles/agents.sh
 claude/settings.json:$HOME/.claude/settings.json
-claude/output-styles:$HOME/.claude/output-styles
-claude/agents:$HOME/.claude/agents
+plugins/ai-agent-dotfiles/output-styles:$HOME/.claude/output-styles
+plugins/ai-agent-dotfiles/agents:$HOME/.claude/agents
 tmux/tmux.conf:$HOME/.tmux.conf
 "
 
@@ -51,11 +51,6 @@ for pair in $LINKS; do
   fi
   ln -s "$src" "$dst" && printf '  링크   %s\n' "${pair%%:*}" || rc=1
 done
-
-# .omc-config.json 은 OMC 가 직접 갱신하므로 링크하지 않고, 없을 때만 씨앗 복사
-if [ "$CHECK" = 0 ] && [ ! -e "$DEST/.omc-config.json" ] && [ -e "$REPO/claude/omc-config.seed.json" ]; then
-  cp "$REPO/claude/omc-config.seed.json" "$DEST/.omc-config.json" && printf '  복사   .omc-config.json (씨앗값)\n'
-fi
 
 if [ "$CHECK" = 0 ]; then
   if grep -q 'agent-dotfiles/agents.sh' "$HOME/.bashrc" 2>/dev/null; then

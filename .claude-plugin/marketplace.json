@@ -1,0 +1,15 @@
+{
+  "name": "ai-agent-dotfiles",
+  "owner": { "name": "jinmang2" },
+  "metadata": {
+    "description": "Claude Code 서브에이전트·출력 스타일 배포용 마켓플레이스",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "ai-agent-dotfiles",
+      "source": "./plugins/ai-agent-dotfiles",
+      "description": "직접 만든 서브에이전트와 출력 스타일 모음."
+    }
+  ]
+}

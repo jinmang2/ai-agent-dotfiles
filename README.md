@@ -26,7 +26,6 @@ claude/         Claude Code 전용
   settings.json      훅 8개 · 권한 · 플러그인 · 스테이터스라인
   agents/            커스텀 서브에이전트
   output-styles/     응답 스타일
-  omc-config.seed.json
 codex/          Codex CLI 전용
   config.template.toml   이식 가능한 부분만
   hooks.snippet.json     창 이름 훅 (준비됨, 미적용)

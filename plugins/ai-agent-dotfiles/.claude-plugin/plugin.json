@@ -1,0 +1,8 @@
+{
+  "name": "ai-agent-dotfiles",
+  "version": "0.1.0",
+  "description": "직접 만든 서브에이전트와 출력 스타일 모음.",
+  "author": { "name": "jinmang2", "url": "https://github.com/jinmang2" },
+  "license": "MIT",
+  "keywords": ["subagent", "output-style", "dotfiles"]
+}
