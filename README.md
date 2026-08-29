@@ -47,7 +47,8 @@ claude/         Claude Code 전용
   settings.json      훅 8개 · 권한 · 플러그인 6개 · 스테이터스라인
 plugins/ai-agent-dotfiles/     배포 단위 (마켓플레이스로 설치됨)
   .claude-plugin/plugin.json
-  agents/inspector.md
+  agents/inspector.md          대상 하나를 읽고 사실만 보고
+  skills/handoff/SKILL.md      세션 워크로그 · 이슈 인계
 codex/          Codex CLI 전용
   config.template.toml   이식 가능한 부분만
   hooks.snippet.json     창 이름 훅 (준비됨, 미적용)

@@ -58,7 +58,15 @@
 plugins/ai-agent-dotfiles/
   .claude-plugin/plugin.json
   agents/inspector.md
+  skills/handoff/SKILL.md
 ```
+
+`plugin.json` 에 경로를 안 적으면 관례 디렉토리(`agents/` `skills/` `commands/`
+`output-styles/`)를 자동으로 찾는다. 그래서 종류를 늘려도 매니페스트는 그대로다.
+
+**무엇이 여기 올라오나**: 여러 저장소에서 되풀이해 쓰는 절차. 판단 기준은
+"같은 것을 두 번 이상 복사했나"다 — `handoff` 는 세 벌이 흩어져 있었고 그중 둘만
+갱신돼 갈라져 있었다. 프로젝트에 묶인 것은 그 저장소에 남긴다 (`docs/skills.md`).
 
 ## 배포 경로는 하나만 쓴다
 
