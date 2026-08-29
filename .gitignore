@@ -12,7 +12,5 @@
 .omc/
 .DS_Store
 
-# ── 이 머신의 인벤토리 (공개 금지) ────────────────────
-# tailnet 호스트/IP, 프로젝트명, conda env, 실제 경로가 든 승인 규칙 등.
-# 저장소를 private 로 두면 이 줄들을 지우고 커밋해도 된다.
-local/
+# local/ 은 비공개 서브모듈이다 (jinmang2/ai-agent-dotfiles-local).
+# 호스트명·내부 IP·기계 고유 경로가 들어가므로 공개 저장소에 직접 두지 않는다.
