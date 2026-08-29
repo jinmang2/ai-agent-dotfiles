@@ -2,23 +2,29 @@
 #   기계 고유 항목은 여기 없다 (아래 "제외" 참고). omx setup 이 다시 만든다.
 #   적용: 이 파일 내용을 ~/.codex/config.toml 에 병합. 이미 있는 키는 덮어쓰지 말 것.
 
-model = "gpt-5.5"
+model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 model_context_window = 250000
 model_auto_compact_token_limit = 200000
+approvals_reviewer = "user"
 suppress_unstable_features_warning = true
 
 [features]
+unified_exec = true
+plugin_hooks = true
+plugins = true
 multi_agent = true
 child_agents_md = true
 hooks = true
 goals = true
 
+[features.multi_agent_v2]
+max_concurrent_threads_per_session = 1000
+
 [shell_environment_policy.set]
 USE_OMX_EXPLORE_CMD = "0"
 
 [agents]
-max_threads = 6
 max_depth = 2
 
 [tui]
@@ -28,7 +34,20 @@ status_line = [
   "five-hour-limit", "weekly-limit",
 ]
 
-# ── 의도적으로 제외한 기계 고유 항목 ──────────────────────
+# omo 플러그인 (sisyphuslabs 마켓플레이스).  어떤 MCP 서버를 켜고 끌지는 내 선택이라 이식한다.
+# 단 [marketplaces.sisyphuslabs] 는 여기 없다 — source 가 이 머신의 로컬 캐시 절대경로다.
+# 새 머신에서는 omo CLI 를 설치하면 마켓플레이스가 등록되고, 그 다음 이 블록이 의미를 갖는다.
+[plugins."omo@sisyphuslabs"]
+enabled = true
+
+[plugins."omo@sisyphuslabs".mcp_servers]
+context7 = { enabled = true }
+codegraph = { enabled = true }
+git_bash = { enabled = false }
+
+# ── 의도적으로 제외한 것 ────────────────────────────────────
+#
+# 1) 머신마다 값이 달라지는 것
 #
 #   notify = ["node", "/home/<user>/.nvm/versions/node/vXX/lib/node_modules/..."]
 #       nvm 버전이 박힌 절대경로. 새 머신에서 노드 버전이 다르면 깨진다.
@@ -45,5 +64,22 @@ status_line = [
 #       훅 정의의 해시. 훅 파일이 바뀌면 무효가 된다.
 #       새 머신에서는 /hooks 로 직접 승인해야 하며, 복사해봐야 소용이 없다.
 #
-#   [tui.model_availability_nux]
+#   [tui.model_availability_nux] · [notice]
 #       UI 안내 표시 횟수 카운터. 순수 로컬 상태.
+#
+#   [agents.<이름>]  config_file = "./agents/<이름>.toml"
+#       OMX 가 설치한 서브에이전트 등록. omx setup 이 다시 쓴다.
+#
+#   [marketplaces.sisyphuslabs]
+#       source 가 "/home/<user>/.codex/plugins/cache/..." 로컬 절대경로 + 갱신 타임스탬프.
+#       omo CLI 설치가 다시 만든다.
+#
+# 2) 보안 태세라서 머신마다 직접 정해야 하는 것  ★ 일부러 안 넣는다
+#
+#   approval_policy = "never"
+#   sandbox_mode    = "danger-full-access"
+#   network_access  = "enabled"
+#       개인 머신에서는 쓸 수 있어도, 회사 머신이나 공용 머신에 이 값이
+#       설정 파일을 따라 조용히 들어가면 안 된다. 승인 없이 임의 명령 실행 +
+#       네트워크 전면 허용이라는 뜻이다.
+#       새 머신에서 필요하다고 판단되면 그때 명시적으로 추가한다.

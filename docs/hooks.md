@@ -14,6 +14,13 @@
 Claude Code 는 `~/.claude/settings.json` 안에, Codex 는 `~/.codex/hooks.json` 에 둔다.
 그래서 `agent/window-label.sh` 하나를 양쪽에서 그대로 쓴다.
 
+**user 스코프 설정 파일은 `~/.claude/settings.json` 하나뿐이다.** Claude Code 가 읽는
+설정 파일은 managed / `--settings` / `.claude/settings.local.json` (프로젝트) /
+`.claude/settings.json` (프로젝트) / `~/.claude/settings.json` (user) 다섯이고,
+`~/.claude/settings.local.json` 은 **목록에 없다 — 만들어도 조용히 무시된다.**
+그래서 머신 고유 설정은 파일을 나누는 대신 설치 시점에 합친다 (`docs/machines.md`).
+OMC 같은 도구의 환경변수는 셸에서 export 한다 (`shell/agents.sh`).
+
 ## 이벤트 대응표
 
 | 하는 일 | Claude Code | Codex |
@@ -88,7 +95,11 @@ if [ -n "$state" ] && [ "$state" = "$(tmux show -w -t "$TMUX_PANE" -v @cc 2>/dev
 fi
 ```
 
-실측: 조기 탈출 8ms, 전체 렌더 21ms.
+실측: 조기 탈출 10ms, 전체 렌더 21ms (2026-08-29, WSL2).
+
+조기 탈출의 판단 기준은 **상태값 하나**다. 그래서 상태가 그대로인 채 cwd 만 바뀌면
+창 이름이 잠시 옛 저장소 이름으로 남는다. 상태는 매 턴 `busy → done` 을 오가므로
+다음 턴에 저절로 맞춰진다. `ccname` 은 상태를 빈 값으로 넘겨 이 탈출을 건너뛴다.
 
 ## 경로는 `$HOME` 으로 쓴다
 

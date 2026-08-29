@@ -58,15 +58,31 @@
 plugins/ai-agent-dotfiles/
   .claude-plugin/plugin.json
   agents/inspector.md
-  output-styles/
 ```
 
-`install.sh` 는 이것들을 `~/.claude/` 로 심링크한다 (마켓플레이스 등록 전에도 쓰기 위해).
-푸시한 뒤에는 다른 머신에서 `/plugin install` 두 줄로 끝난다 — **심링크 끊김 문제 자체가
-사라진다.**
+## 배포 경로는 하나만 쓴다
 
-`tmux.conf` `bashrc` `gitconfig` `agent/window-label.sh` 는 플러그인 콘텐츠가 아니라
-`install.sh` 몫으로 남는다. 그래서 혼합 구조다.
+한동안 `install.sh` 가 `plugins/.../agents` 를 `~/.claude/agents` 로 심링크하고
+동시에 마켓플레이스로도 배포했다. 같은 `inspector` 가 두 경로로 들어와 중복이고,
+어느 쪽이 실제로 로드된 건지 알 수 없었다.
+
+**지금은 플러그인 경로 하나뿐이다.** `install.sh` 는 `~/.claude/agents` 를 만들지 않는다.
+대신 `claude/settings.json` 이 이 저장소를 마켓플레이스로 등록해둔다:
+
+```json
+"enabledPlugins":        { "ai-agent-dotfiles@ai-agent-dotfiles": true },
+"extraKnownMarketplaces": { "ai-agent-dotfiles": {
+    "source": { "source": "github", "repo": "jinmang2/ai-agent-dotfiles" } } }
+```
+
+그래서 새 머신에서는 `claude` 를 한 번 실행하면 끝이다 — `/plugin marketplace add` 를
+손으로 칠 필요도 없고, **심링크 끊김 문제 자체가 사라진다.**
+
+단 이건 **푸시된 내용**을 받는다. 아직 안 올린 에이전트를 시험하려면
+`claude --plugin-dir ./plugins/ai-agent-dotfiles` 로 붙인다.
+
+`tmux.conf` `bashrc` `agent/window-label.sh` `gemini/GEMINI.md` 는 플러그인 콘텐츠가
+아니라 `install.sh` 몫으로 남는다. 그래서 혼합 구조다.
 
 ## 배운 것
 

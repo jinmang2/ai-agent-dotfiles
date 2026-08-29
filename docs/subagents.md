@@ -6,6 +6,8 @@
 ## 정의
 
 `~/.claude/agents/<이름>.md` — frontmatter + 시스템 프롬프트.
+이 저장소는 여기에 직접 두지 않고 **플러그인으로 배포한다**
+(`plugins/ai-agent-dotfiles/agents/`). 이유는 `docs/plugins.md`.
 
 ```markdown
 ---
@@ -18,7 +20,7 @@ model: sonnet                       # 생략하면 상위 세션 모델을 물�
 시스템 프롬프트. 역할·규칙·출력 형식을 여기에 쓴다.
 ```
 
-저장소의 `claude/agents/inspector.md` 가 실물 예시다.
+저장소의 `plugins/ai-agent-dotfiles/agents/inspector.md` 가 실물 예시다.
 
 ## 세 가지 호출 방식
 

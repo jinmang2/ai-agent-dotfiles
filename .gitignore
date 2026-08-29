@@ -6,6 +6,8 @@
 *.key
 
 # 실행 상태 / 임시
+__pycache__/
+*.pyc
 *.tmp.*
 *.detached-*
 *.pre-install-*

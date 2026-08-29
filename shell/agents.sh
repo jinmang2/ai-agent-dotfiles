@@ -3,18 +3,37 @@
 # ~/.claude 의 것을 심링크로 공유합니다.
 
 CLAUDE_SHARED_ROOT="$HOME/.claude"
-# 계정 이름 -> config 디렉토리.  계정을 늘리려면 여기와 profiles.conf 에 한 줄씩.
+
+# ── 계정 등록 ─────────────────────────────────────────────────────────────
+# 계정을 늘리려면 여기에 CLAUDE_ACCOUNT_DIRS_<이름> 한 줄 + profiles.conf 에 한 줄.
+# 아래 함수들은 이 변수들을 자동으로 훑으므로 다른 곳은 손대지 않아도 됩니다.
 CLAUDE_ACCOUNT_DIRS_team="$HOME/.claude-team"
 
 # ~/.claude 에서 그대로 물려쓸 항목들
 CLAUDE_SHARED_ITEMS="settings.json skills plugins hooks hud commands agents CLAUDE.md"
 
+# OMC 환경변수.  ~/.claude/settings.local.json 은 Claude Code 가 읽지 않으므로
+# (user 스코프 설정 파일은 settings.json 하나뿐) 셸에서 export 한다.
+export ALLOW_ULTRAGOAL_WITHOUT_GOAL=1
+
+# 등록된 계정 이름 목록 (personal 은 ~/.claude 자체라 항상 맨 앞)
+_claude_account_names() {
+  local v
+  printf 'personal\n'
+  for v in ${!CLAUDE_ACCOUNT_DIRS_@}; do printf '%s\n' "${v#CLAUDE_ACCOUNT_DIRS_}"; done
+}
+
+_claude_account_dir() {
+  [ "$1" = personal ] && { printf '%s' "$CLAUDE_SHARED_ROOT"; return; }
+  eval "printf '%s' \"\${CLAUDE_ACCOUNT_DIRS_$1:-}\""
+}
+
 # 계정 config 디렉토리를 만들고 공유 항목을 심링크로 (재)연결한다. 몇 번 돌려도 안전.
 claude-account-link() {
   local acct="${1:?사용법: claude-account-link <계정이름>}"
-  local dir; dir=$(eval "printf '%s' \"\${CLAUDE_ACCOUNT_DIRS_$acct:-}\"")
-  if [ -z "$dir" ]; then
-    echo "알 수 없는 계정: $acct" >&2; return 1
+  local dir; dir=$(_claude_account_dir "$acct")
+  if [ -z "$dir" ] || [ "$acct" = personal ]; then
+    echo "알 수 없는 계정: $acct  (등록된 계정: $(_claude_account_names | tr '\n' ' '))" >&2; return 1
   fi
 
   mkdir -p "$dir" || return 1
@@ -45,15 +64,14 @@ claude-account-link() {
 
 # 계정 상태 점검 (링크 끊김 / 로그인 여부)
 claude-accounts() {
-  local acct dir
-  printf '%-10s %-24s %-10s %s\n' 계정 CONFIG_DIR 로그인 공유링크
-  for acct in personal team; do
-    if [ "$acct" = personal ]; then dir="$CLAUDE_SHARED_ROOT"
-    else dir=$(eval "printf '%s' \"\${CLAUDE_ACCOUNT_DIRS_$acct:-}\""); fi
+  local acct dir login links item broken total
+  printf '%-10s %-24s %-8s %s\n' ACCOUNT CONFIG_DIR LOGIN SHARED-LINKS
+  while read -r acct; do
+    dir=$(_claude_account_dir "$acct")
     [ -n "$dir" ] || continue
 
-    local login=없음 links=- item broken=0 total=0
-    [ -s "$dir/.credentials.json" ] && login=있음
+    login="-"; links="-"; broken=0; total=0
+    [ -s "$dir/.credentials.json" ] && login="O"
 
     if [ "$acct" != personal ]; then
       for item in $CLAUDE_SHARED_ITEMS; do
@@ -61,16 +79,23 @@ claude-accounts() {
         total=$((total+1))
         [ -L "$dir/$item" ] && [ -e "$dir/$item" ] || broken=$((broken+1))
       done
-      if [ "$broken" -eq 0 ]; then links="정상 ($total)"; else links="끊김 $broken/$total  → claude-account-link $acct"; fi
+      if [ "$broken" -eq 0 ]; then links="정상 ($total)"
+      else links="끊김 $broken/$total  → claude-account-link $acct"; fi
     fi
-    printf '%-10s %-24s %-10s %s\n' "$acct" "${dir/#$HOME/\~}" "$login" "$links"
-  done
+    printf '%-10s %-24s %-8s %s\n' "$acct" "${dir/#$HOME/\~}" "$login" "$links"
+  done < <(_claude_account_names)
 }
 
-# team 계정으로 실행
-claude-team() {
-  CLAUDE_CONFIG_DIR="$CLAUDE_ACCOUNT_DIRS_team" AGENT_PROFILE=claude-team command claude "$@"
+# 계정별 실행 함수를 자동 생성한다 (claude-team, 계정을 늘리면 claude-<이름>).
+_claude_define_account_runners() {
+  local acct dir
+  while read -r acct; do
+    [ "$acct" = personal ] && continue
+    dir=$(_claude_account_dir "$acct")
+    eval "claude-$acct() { CLAUDE_CONFIG_DIR='$dir' AGENT_PROFILE='claude-$acct' command claude \"\$@\"; }"
+  done < <(_claude_account_names)
 }
+_claude_define_account_runners
 
 # 현재 tmux 창의 작업명을 고정/해제.  Claude Code 안에서는 `!ccname 작업명` 으로.
 ccname() {
