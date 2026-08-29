@@ -7,8 +7,17 @@ Claude Code · Codex CLI · tmux · 셸 설정. 새 머신에서 `clone` + `inst
 
 ## 설치
 
+### 플러그인만 (서브에이전트 등)
+
+```
+/plugin marketplace add jinmang2/ai-agent-dotfiles
+/plugin install ai-agent-dotfiles@ai-agent-dotfiles
+```
+
+### 전체 (훅 · tmux · 셸까지)
+
 ```bash
-git clone <이 저장소> ~/ai-agent-dotfiles
+git clone https://github.com/jinmang2/ai-agent-dotfiles ~/ai-agent-dotfiles
 cd ~/ai-agent-dotfiles && ./install.sh
 source ~/.bashrc
 ```
@@ -24,14 +33,15 @@ agent/          두 도구가 공유하는 것
   profiles.conf      프로필 → 마커 표
 claude/         Claude Code 전용
   settings.json      훅 8개 · 권한 · 플러그인 · 스테이터스라인
-  agents/            커스텀 서브에이전트
-  output-styles/     응답 스타일
+plugins/ai-agent-dotfiles/     배포 단위
+  .claude-plugin/plugin.json
+  agents/inspector.md
 codex/          Codex CLI 전용
   config.template.toml   이식 가능한 부분만
   hooks.snippet.json     창 이름 훅 (준비됨, 미적용)
   README.md              적용 절차와 신뢰 모델
 tmux/tmux.conf
-shell/          agents.sh · bashrc.snippet · gitconfig
+shell/          agents.sh · bashrc.snippet
 docs/           레퍼런스
   hooks.md · skills.md · subagents.md · checklist.md
 local/          이 머신 고유 (비공개 서브모듈, 커밋 안 됨)

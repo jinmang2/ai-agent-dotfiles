@@ -26,7 +26,6 @@
       "Bash(~/ai-agent-dotfiles/install.sh --check)"
     ]
   },
-  "outputStyle": "korean-fluent",
   "hooks": {
     "PreToolUse": [
       {

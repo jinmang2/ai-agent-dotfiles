@@ -17,7 +17,6 @@ agent/window-label.sh:$HOME/.local/bin/agent-window-label
 agent/profiles.conf:$HOME/.config/agent-profiles.conf
 shell/agents.sh:$HOME/.config/agent-dotfiles/agents.sh
 claude/settings.json:$HOME/.claude/settings.json
-plugins/ai-agent-dotfiles/output-styles:$HOME/.claude/output-styles
 plugins/ai-agent-dotfiles/agents:$HOME/.claude/agents
 tmux/tmux.conf:$HOME/.tmux.conf
 "

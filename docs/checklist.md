@@ -17,6 +17,16 @@ claude          # 플러그인 자동 설치 + /login
 | `claude doctor` | 설치 건강성 |
 | `tmux ls` | 창 이름이 `⏳🔵repo` 형태인지 |
 
+## git 신원
+
+저장소에 두지 않는다. `~/.gitconfig` 는 `gh auth` 와 `git config --global` 이 수시로
+다시 쓰기 때문에 심링크로 걸면 끊긴다.
+
+```bash
+git config --global user.name  "<이름>"
+git config --global user.email "<이메일>"
+```
+
 ## 저장소에 없어서 매번 다시 하는 것
 
 SSH 키 (`ssh-keygen` → `gh ssh-key add`) · gh · Claude · Codex 로그인.
