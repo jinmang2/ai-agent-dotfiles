@@ -80,11 +80,16 @@ local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
 | `gemini/GEMINI.md` | 심링크 | `~/.gemini/GEMINI.md` |
 | `claude/settings.json` | 심링크 **또는 병합** | `~/.claude/settings.json` |
 | `plugins/ai-agent-dotfiles/` | 마켓플레이스 | Claude Code 가 직접 설치 |
+| `local/ssh-config` | 없을 때만 복사 (600) | `~/.ssh/config` |
 
 공용 항목은 일부러 `~/.claude/` 밖에 둔다. Codex 도 같은 스크립트를 쓴다.
 
 서브에이전트는 **심링크하지 않는다.** 플러그인 하나만이 배포 경로다 —
 두 경로로 들어와 중복되던 걸 정리했다 (`docs/plugins.md`).
+
+`~/.ssh/config` 도 심링크하지 않는다. 600 권한이 필요하고 도구들이 직접 고치기도 한다.
+없을 때만 복사하고, 이미 있으면 **손대지 않고 차이만 보여준다** — ssh 설정은 잘못
+덮어쓰면 접속 자체가 막힌다.
 
 ## 머신 고유 설정
 
@@ -163,6 +168,7 @@ tmux 에서 구분하려면 `agent/profiles.conf` 에 마커 한 줄을 더한�
 | `~/.claude/.credentials.json` · `~/.codex/auth.json` | OAuth 토큰 |
 | `projects/ sessions/ history.jsonl` | 대화 기록 전문 |
 | `~/.claude/skills/` (1.5G) · `plugins/` (634M) | 재설치로 복원 |
+| `~/.claude/hud/` | OMC 설치물. **`settings.json` 의 statusLine 이 이걸 참조한다** |
 | `~/.claude/CLAUDE.md` | OMC 생성물. `omc setup` 이 덮어쓴다 |
 | `~/.codex/AGENTS.md` · `agents/` · `skills/` | OMX 생성물 |
 | `config.toml` 의 절대경로 · 프로젝트 trust · 훅 해시 | 기계 고유 |
@@ -180,8 +186,15 @@ npm i -g @openai/codex oh-my-codex && omx setup               # Codex (선택)
 git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack   # 선택
 ```
 
-gstack 이 없으면 `settings.json` 의 `AskUserQuestion` 훅 3개만 조용히 실패한다.
-나머지 기능엔 영향 없다.
+`settings.json` 은 저장소에 없는 두 가지를 참조한다. 둘 다 조용히 실패하므로 미리 알아둔다.
+
+| 참조 | 없으면 | 복원 |
+|---|---|---|
+| `~/.claude/skills/gstack/...` (훅 3개) | `AskUserQuestion` 훅만 실패 | gstack clone |
+| `~/.claude/hud/omc-hud-cache.sh` (statusLine) | 스테이터스라인이 빈 줄 | `omc setup` |
+
+`omc setup` 은 `claude` 를 한 번 띄워 OMC 플러그인이 깔린 뒤에 돈다. 그전까지는
+statusLine 이 비어 보이는 게 정상이다.
 
 ## 함정
 

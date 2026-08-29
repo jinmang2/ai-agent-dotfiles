@@ -120,6 +120,29 @@ else
   fi
 fi
 
+# ── ~/.ssh/config ────────────────────────────────────────────────────────
+# 심링크하지 않는다. 600 권한이 필요하고, 도구들이 이 파일을 직접 고치기도 한다.
+# 없으면 비공개 서브모듈의 것을 복사하고, 이미 있으면 손대지 않고 차이만 보여준다.
+SRC_SSH="$REPO/local/ssh-config"
+DST_SSH="$HOME/.ssh/config"
+if [ -f "$SRC_SSH" ]; then
+  if [ ! -e "$DST_SSH" ]; then
+    if [ "$CHECK" = 1 ]; then
+      printf '  미설치 ~/.ssh/config  (→ ./install.sh 가 local/ssh-config 를 복사)\n'; bad=$((bad+1))
+    else
+      mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+      cp "$SRC_SSH" "$DST_SSH" && chmod 600 "$DST_SSH" \
+        && printf '  복사   local/ssh-config -> ~/.ssh/config (600)\n' || rc=1
+    fi
+  elif diff -q "$SRC_SSH" "$DST_SSH" >/dev/null 2>&1; then
+    printf '  ok     ~/.ssh/config\n'; ok=$((ok+1))
+  else
+    # 손대지 않는다. ssh 설정은 잘못 덮어쓰면 접속 자체가 막힌다.
+    printf '  다름   ~/.ssh/config  (직접 판단하세요 — 자동으로 덮어쓰지 않습니다)\n'
+    diff -u "$DST_SSH" "$SRC_SSH" 2>/dev/null | sed -n '3,$p' | sed 's/^/    /' | head -30
+  fi
+fi
+
 # ── .bashrc ─────────────────────────────────────────────────────────────
 # 예전 방식으로 손수 넣은 `alias claude-team=...` 이 남아 있으면 agents.sh 의
 # claude-team 함수를 가린다 (alias 확장이 함수 조회보다 먼저 일어난다).

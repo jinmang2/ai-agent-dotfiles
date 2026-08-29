@@ -3,11 +3,13 @@
 ```bash
 gh auth login                                  # 1. 먼저. local/ 서브모듈이 이걸 탄다
 git clone --recursive https://github.com/jinmang2/ai-agent-dotfiles ~/ai-agent-dotfiles
-cd ~/ai-agent-dotfiles && ./install.sh          # 2. 설정 배치
-cp local/ssh-config ~/.ssh/config && chmod 600 ~/.ssh/config
+cd ~/ai-agent-dotfiles && ./install.sh          # 2. 설정 배치 (~/.ssh/config 포함)
 source ~/.bashrc
 claude                                          # 3. 플러그인 자동 설치 + /login
 ```
+
+`~/.ssh/config` 는 `install.sh` 가 없을 때만 복사한다(600). 이미 있으면 차이만
+보여주고 손대지 않으니, 그때는 직접 합친다.
 
 서브모듈 URL 은 HTTPS 다. 예전엔 SSH 였는데, SSH 키 등록이 이 순서에서 clone 보다
 뒤라 서로를 기다리는 교착이 있었다. HTTPS 는 `gh auth git-credential` 로
@@ -56,6 +58,9 @@ SSH 키 (`ssh-keygen` → `gh ssh-key add`) · gh · Claude · Codex 로그인.
 npm i -g @openai/codex oh-my-codex && omx setup                            # Codex + OMX
 git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack   # 선택 (1.5G)
 ```
+
+`~/.claude/hud/` 도 마찬가지다 — `settings.json` 의 statusLine 이 참조하지만 OMC
+설치물이라 저장소에 없다. `omc setup` 전까지 스테이터스라인이 비어 보이는 건 정상이다.
 
 `~/.claude/CLAUDE.md` 도 여기 속한다. OMC 가 소유하고 `omc setup` 이 덮어쓰므로
 (`<!-- OMC:VERSION:... -->` 표시가 있다) 심링크로 걸면 `~/.gitconfig` 와 같은 이유로
