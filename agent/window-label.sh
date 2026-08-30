@@ -4,7 +4,11 @@
 #   $1 = 상태 이모지 (⏳ 작업중 / ❓ 입력대기 / ✅ 완료).  빈 값이면 @cc 에서 유추.
 #   $2 = @cc 에 기록할 상태 문자열 (busy/waiting/done). 빈 값이면 건드리지 않음.
 #
-# 프로필 마커: $AGENT_PROFILE (미설정 시 claude) 를 profiles.conf 에서 조회.
+# 프로필 마커: $AGENT_PROFILE 을 profiles.conf 에서 조회.
+#   AGENT_PROFILE 이 없으면 $CLAUDE_CONFIG_DIR 에서 유도한다 (.claude-team -> claude-team).
+#   두 변수가 어긋나면 창 마커와 HUD 의 profile: 이 서로 다른 계정을 가리키게 되는데,
+#   실제로 그런 창이 나왔다 — CLAUDE_CONFIG_DIR 만 걸린 채 실행된 세션이 team 계정을
+#   쓰면서 창에는 🔵(개인) 마커를 달고 있었다.  HUD 도 같은 값을 보므로 유도가 맞다.
 #   Claude Code 와 Codex 가 같은 스크립트를 공유한다 (훅 형식이 동일).
 # 라벨 우선순위: @cc_label(수동 작업명) > git 저장소 이름 > ~ > 디렉토리 이름
 #   git 브랜치는 일부러 쓰지 않는다 (수시로 바뀌어 식별에 도움이 안 됨).
@@ -38,7 +42,12 @@ fi
 
 # --- 프로필 마커 ---
 # CLAUDE_ACCOUNT 는 이전 이름 — 당분간 함께 받는다
-profile="${AGENT_PROFILE:-${CLAUDE_ACCOUNT:-claude}}"
+profile="${AGENT_PROFILE:-${CLAUDE_ACCOUNT:-}}"
+if [ -z "$profile" ] && [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
+  # HUD 의 profile: 과 같은 규칙 — basename 에서 앞의 점을 뗀다.
+  profile=${CLAUDE_CONFIG_DIR%/}; profile=${profile##*/}; profile=${profile#.}
+fi
+profile="${profile:-claude}"
 marker=""
 if [ -r "$CONF" ]; then
   while read -r a m _rest; do

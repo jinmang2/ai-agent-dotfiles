@@ -192,6 +192,27 @@ _claude_define_account_runners() {
 }
 _claude_define_account_runners
 
+# personal 계정(= ~/.claude 자체)도 같은 모양으로 감싼다. 값은 기본값과 같아서
+# 동작은 달라지지 않지만, 지금까지 기본값에 기대던 두 가지가 명시적으로 켜진다:
+#
+#   AGENT_PROFILE=claude   tmux 창 마커 🔵 (window-label.sh 의 fallback 에 의존하던 것)
+#   CLAUDE_CONFIG_DIR      OMC HUD 의 profile: 표시
+#
+# 이 둘은 서로 다른 변수를 본다. tmux 마커는 AGENT_PROFILE 을 profiles.conf 에서
+# 찾고, HUD 는 AGENT_PROFILE 을 아예 모른 채 basename($CLAUDE_CONFIG_DIR) 만 쓴다.
+# 그래서 이걸 안 걸면 personal 세션의 HUD 에는 profile 줄이 통째로 빠져서,
+# 창 이름으로는 🔵/🟣 가 구분되는데 HUD 로는 어느 계정인지 알 수 없었다.
+#
+# 다만 덮어쓰지는 않는다. 이미 걸려 있는 CLAUDE_CONFIG_DIR 을 personal 로 되돌리면
+# 이번에 고친 불일치가 반대 방향으로 되살아난다 — team 세션 안에서 `!claude` 를
+# 부르는 경우가 그렇다. 그래서 물려받고, 프로필은 window-label.sh 와 똑같은 규칙
+# (basename 에서 앞의 점을 뗀다) 으로 거기서 유도한다. 두 곳이 늘 같은 답을 낸다.
+claude() {
+  local d="${CLAUDE_CONFIG_DIR:-$CLAUDE_SHARED_ROOT}" p
+  p=${d%/}; p=${p##*/}; p=${p#.}
+  CLAUDE_CONFIG_DIR="$d" AGENT_PROFILE="${AGENT_PROFILE:-$p}" command claude "$@"
+}
+
 # ── 창 이름: 셸이 주인일 때 ──────────────────────────────────────────────
 # 에이전트가 그 창을 떠났다는 이벤트는 없다. Claude Code 의 Stop 훅은 턴 끝에
 # 불릴 뿐이고, 강제 종료되면 아무 훅도 안 불린다. 그래서 종료 뒤에도 ✅🔵repo
