@@ -66,6 +66,8 @@ scripts/
 docs/           레퍼런스
   hooks.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
   hud.md                 스테이터스라인 원리 + omcHud 옵션 전체
+  orchestration.md       서브에이전트를 언제 묶어 띄우나 (측정 + 판단표)
+  omc.md                 OMC 구조·훅·MCP 도구·실사용량 (5.0.2 기준)
 local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
   ssh-config           tailnet 별칭 (전 머신 공용)
   hosts/<호스트>/       이 머신에서만 쓰는 값
