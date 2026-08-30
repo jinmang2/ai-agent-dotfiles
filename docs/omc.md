@@ -99,7 +99,7 @@ OMC_SKIP_HOOKS=keyword-detector,post-tool-use  # 골라서
 | 계열 | 개수 | 지금 쓸 수 있나 |
 |---|---|---|
 | `lsp_*` | 12 | **아니오.** 언어 서버가 하나도 안 깔려 있다. 자동 설치 안 하고 힌트만 반환 |
-| `ast_grep_*` | 2 | **예.** `@ast-grep/napi` 와 `ast-grep`/`sg` CLI 둘 다 있다 |
+| `ast_grep_*` | 2 | **재시작 후.** 아래 참고 |
 | `wiki_*` | 7 | 예. `.omc/wiki` 에 마크다운으로 저장 |
 | `state_*` (+ `merge_readiness_*` 5) | 11 | 예. `.omc/state/` |
 | `notepad_*` | 6 | 예. `.omc/notepad.md` |
@@ -112,7 +112,35 @@ OMC_SKIP_HOOKS=keyword-detector,post-tool-use  # 골라서
 `.omc/` 는 이 저장소의 `.gitignore` 가 무시한다 — wiki·notepad·state 는 전부 그 아래라
 **저장소에 안 남는다.** 세션 간에 남기려면 그걸 알고 써야 한다.
 
-lsp 를 켜려면 언어 서버를 깔면 된다. 주 언어가 파이썬이므로 `pyright` 계열이 먼저다.
+### 표를 믿지 말고 한 번 불러볼 것
+
+`ast_grep_search` 를 실제로 호출해보고 위 표를 고쳤다. 모듈이 디스크에 있는 걸 확인했는데도
+이렇게 실패했다.
+
+```
+@ast-grep/napi is not available.
+Error: Cannot find package '@ast-grep/napi' imported from
+       …/oh-my-claudecode/4.15.10/bridge/mcp-server.cjs
+```
+
+**MCP 서버는 플러그인을 업데이트해도 재시작 전까지 옛 버전으로 돈다.** 그리고 하필
+`4.15.10/node_modules/` 에만 `@ast-grep/napi` 가 없다 (4.14.5 와 5.0.2 에는 있다).
+재시작하면 5.0.2 브리지가 뜨면서 풀린다.
+
+교훈은 그대로다 — **파일이 있다 ≠ 도구가 돈다.** 도구 가용성은 한 번 불러서 확인한다.
+
+### lsp 를 켜려면
+
+파이썬 서버는 `pyright` 가 아니다. `dist/tools/lsp/servers.js` 기준:
+
+| | 명령 | 설치 |
+|---|---|---|
+| 기본 | `ty server` | https://github.com/astral-sh/ty |
+| 옵션 | `basedpyright-langserver --stdio` | `uv tool install basedpyright` |
+
+`OMC_PYTHON_LSP=basedpyright` 일 때만 두 번째를 쓴다 (정확히 그 문자열만 인정).
+셸에서 export 하는 자리는 `shell/agents.sh` 다. 둘 다 안 깔려 있고, 서버 설정은
+22종이 정의돼 있다 (typescript · rust-analyzer · gopls · clangd · jdtls 등).
 
 ## 실제 사용량 (2026-08-30 실측)
 
