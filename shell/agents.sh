@@ -218,6 +218,12 @@ claude() {
   CLAUDE_CONFIG_DIR="$d" AGENT_PROFILE="${AGENT_PROFILE:-$p}" command claude "$@"
 }
 
+# Codex 도 같은 창 이름 훅을 쓴다 (~/.codex/hooks.json 이 agent-window-label 을 부른다).
+# 다만 Codex 에는 CLAUDE_CONFIG_DIR 같은 단서가 없어서 프로필을 유도할 방법이 없다.
+# 안 걸어주면 window-label.sh 의 기본값 claude 로 떨어져 Codex 창에 🔵(개인 Claude)
+# 마커가 붙는다 — 도구를 구분하려고 만든 표시가 거짓말을 하게 된다.
+codex() { AGENT_PROFILE="${AGENT_PROFILE:-codex}" command codex "$@"; }
+
 # ── 창 이름: 셸이 주인일 때 ──────────────────────────────────────────────
 # 에이전트가 그 창을 떠났다는 이벤트는 없다. Claude Code 의 Stop 훅은 턴 끝에
 # 불릴 뿐이고, 강제 종료되면 아무 훅도 안 불린다. 그래서 종료 뒤에도 ✅🔵repo

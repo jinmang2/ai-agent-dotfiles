@@ -52,7 +52,7 @@ plugins/ai-agent-dotfiles/     배포 단위 (마켓플레이스로 설치됨)
   skills/handoff/SKILL.md      세션 워크로그 · 이슈 인계
 codex/          Codex CLI 전용
   config.template.toml   이식 가능한 부분만
-  hooks.snippet.json     창 이름 훅 (준비됨, 미적용)
+  hooks.snippet.json     창 이름 훅 (적용됨 — install.sh --check 가 감시)
   README.md              적용 절차와 신뢰 모델
 gemini/GEMINI.md
 tmux/tmux.conf
@@ -218,6 +218,7 @@ git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack   # 선
 | `settings.json` → `~/.claude/skills/gstack/...` (훅 3개) | `AskUserQuestion` 훅만 실패 | gstack clone |
 | `settings.json` → `~/.claude/hud/omc-hud-cache.sh` (statusLine) | 스테이터스라인이 빈 줄 | `./install.sh` (`claude` 한 번 실행 뒤) |
 | `agents.sh` → `OMC_PYTHON_LSP=basedpyright` | OMC 의 `lsp_*` 12개가 죽음 | `uv tool install basedpyright` |
+| `~/.codex/hooks.json` → `agent-window-label` | Codex 창에 마커가 안 붙음 | `codex/README.md` 절차 |
 | `omc` CLI (npm 전역) | `omc setup` 이 옛 `CLAUDE.md` 를 씀 | `npm i -g oh-my-claude-sisyphus@<플러그인 버전>` |
 
 HUD 스크립트는 OMC 마켓플레이스 클론(`~/.claude/plugins/marketplaces/omc/scripts/`)에

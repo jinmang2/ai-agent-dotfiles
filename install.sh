@@ -237,6 +237,20 @@ if [ -n "$omc_plug" ] || [ -n "$omc_cli" ]; then
   fi
 fi
 
+# Codex 의 창 이름 훅.  ~/.codex/hooks.json 은 OMX 생성물이고 노드 절대경로가 박혀
+# 있어서 심링크할 수 없다 — 우리 조각(codex/hooks.snippet.json)을 배열 끝에 append 한다.
+# 끝에 붙이는 이유: 신뢰 상태 키가 "<파일>:<이벤트>:<블록번호>:0" 이라, 앞에 끼우면
+# 기존 OMX 훅 7개의 승인이 전부 무효가 된다.
+if [ -f "$HOME/.codex/hooks.json" ]; then
+  if grep -q 'agent-window-label' "$HOME/.codex/hooks.json" 2>/dev/null; then
+    printf '  ok     ~/.codex/hooks.json  (창 이름 훅)\n'; ok=$((ok+1))
+  else
+    warn=$((warn+1))
+    printf '  미적용 ~/.codex/hooks.json  (창 이름 훅 — Codex 창에 마커가 안 붙습니다)\n'
+    printf '         절차: codex/README.md.  적용 후 Codex 에서 /hooks 로 신뢰 승인\n'
+  fi
+fi
+
 # ── ~/.ssh/config ────────────────────────────────────────────────────────
 # 심링크하지 않는다. 600 권한이 필요하고, 도구들이 이 파일을 직접 고치기도 한다.
 # 없으면 비공개 서브모듈의 것을 복사하고, 이미 있으면 손대지 않고 차이만 보여준다.
