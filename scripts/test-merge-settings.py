@@ -137,6 +137,50 @@ class Cli(unittest.TestCase):
         out.write_text('{"a": 99}', encoding="utf-8")
         self.assertEqual(self.run_cli("--check", self.b, self.o, out).returncode, 1)
 
+    def test_끝줄바꿈이_없어도_같다고_본다(self):
+        # omc setup 이 ~/.claude/settings.json 을 끝 줄바꿈 없이 다시 쓴다.
+        # 내용이 같은데 --check 가 1 을 내면 install.sh --check 가 영구히 "갱신필요" 를 띄운다.
+        out = self.dir / "out.json"
+        self.run_cli(self.b, self.o, out)
+        out.write_text(out.read_text(encoding="utf-8").rstrip("\n"), encoding="utf-8")
+        self.assertEqual(self.run_cli("--check", self.b, self.o, out).returncode, 0)
+
+    def test_끝줄바꿈이_여러개여도_같다고_본다(self):
+        out = self.dir / "out.json"
+        self.run_cli(self.b, self.o, out)
+        out.write_text(out.read_text(encoding="utf-8") + "\n\n", encoding="utf-8")
+        self.assertEqual(self.run_cli("--check", self.b, self.o, out).returncode, 0)
+
+    def test_키_순서가_달라도_같다고_본다(self):
+        # Claude Code 가 settings.json 을 자기 순서로 다시 쓴다.  내용이 같은데 글자로
+        # 비교하면 "갱신필요" 가 뜨고, 정작 --diff 는 "달라지는 것 없음" 이라고 답한다.
+        self.b.write_text(json.dumps({"a": 1, "b": 2}), encoding="utf-8")
+        self.o.write_text("{}", encoding="utf-8")
+        out = self.dir / "out.json"
+        self.run_cli(self.b, self.o, out)
+        out.write_text(json.dumps({"b": 2, "a": 1}, indent=2), encoding="utf-8")
+        self.assertEqual(self.run_cli("--check", self.b, self.o, out).returncode, 0)
+
+    def test_설치된_쪽이_깨진_json_이면_다시_쓰라고_한다(self):
+        out = self.dir / "out.json"
+        self.run_cli(self.b, self.o, out)
+        out.write_text("{ 깨짐", encoding="utf-8")
+        self.assertEqual(self.run_cli("--check", self.b, self.o, out).returncode, 1)
+
+    def test_권한_한_줄이_사라지면_여전히_잡는다(self):
+        # 위 두 완화가 엄격함을 깨뜨리지 않았다는 증거.  이 비교의 존재 이유가 이것이다.
+        self.b.write_text(json.dumps({"permissions": {"allow": ["Bash(a)", "Bash(b)"]}}),
+                          encoding="utf-8")
+        self.o.write_text("{}", encoding="utf-8")
+        out = self.dir / "out.json"
+        self.run_cli(self.b, self.o, out)
+        self.assertEqual(self.run_cli("--check", self.b, self.o, out).returncode, 0)
+
+        d = json.loads(out.read_text(encoding="utf-8"))
+        d["permissions"]["allow"].remove("Bash(b)")
+        out.write_text(json.dumps(d, indent=2, ensure_ascii=False), encoding="utf-8")
+        self.assertEqual(self.run_cli("--check", self.b, self.o, out).returncode, 1)
+
     def test_check_는_대상이_없으면_1(self):
         self.assertEqual(self.run_cli("--check", self.b, self.o, self.dir / "없음").returncode, 1)
 

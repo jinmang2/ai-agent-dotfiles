@@ -14,9 +14,10 @@ HUD 블록이 여기에 의존한다. 2026-08-30 기준 · OMC 5.0.2.
 **둘은 따로 논다.** 플러그인만 올리면 CLI 가 4.x 로 남아 `omc setup` 이 옛 CLAUDE.md 를
 쓴다. 버전을 맞춘 뒤 `omc setup` 을 돌려야 `CLAUDE.md` · HUD 가 새 버전과 같아진다.
 
-`omc setup` 은 `~/.claude/settings.json` 을 **끝 줄바꿈 없이** 다시 쓴다. 내용은 같지만
-`install.sh --check` 는 정확한 텍스트 비교라 그 뒤로 계속 `갱신필요` 가 뜬다.
-`./install.sh` 로 되돌리면 된다.
+`omc setup` 은 `~/.claude/settings.json` 을 **끝 줄바꿈 없이** 다시 쓴다. 내용은 같은데
+`install.sh --check` 가 정확한 텍스트 비교라 그 뒤로 계속 `갱신필요` 가 떴었다.
+지금은 `merge-settings.py --check` 가 **끝 줄바꿈만** 무시하므로 그냥 `ok` 로 지나간다
+(나머지는 바이트 그대로 비교한다 — 권한 한 줄이 사라지는 걸 잡는 게 그 비교의 목적이다).
 
 ## 4.15.10 → 5.0.0 에서 사라진 것
 

@@ -2,7 +2,7 @@
 """공통 settings.json 에 호스트별 오버레이를 얹는다.
 
   merge-settings.py <base> <overlay> <out>
-  merge-settings.py --check <base> <overlay> <existing>   # 같으면 exit 0
+  merge-settings.py --check <base> <overlay> <existing>   # 내용이 같으면 exit 0
   merge-settings.py --diff  <base> <overlay> <existing>   # 뭐가 달라지는지 출력
 
 병합 규칙 — 재실행해도 결과가 같도록(멱등) 항상 base 부터 다시 만든다.
@@ -108,11 +108,23 @@ def main(argv):
         return 1
 
     if check:
+        # 글자가 아니라 내용을 본다.  이 비교의 목적은 "권한 한 줄이 조용히 사라진 것"
+        # 을 잡는 것이지 서식을 강제하는 게 아니다 (docs/machines.md).
+        #
+        # 다른 도구들이 이 파일을 자기 서식으로 다시 쓴다 — omc setup 은 끝 줄바꿈을
+        # 떼고, Claude Code 는 키 순서를 바꾼다.  글자로 비교하면 내용이 같은데도
+        # 영구히 "갱신필요" 가 뜨고, 그때 --diff 는 "달라지는 것 없음" 이라고 답해
+        # 두 출력이 서로 어긋난다.
         try:
             with open(target, encoding="utf-8") as f:
-                return 0 if f.read() == text else 1
+                raw = f.read()
         except OSError:
             return 1
+        try:
+            return 0 if json.loads(raw) == json.loads(text) else 1
+        except ValueError:
+            # 설치된 쪽이 깨진 JSON 이면 글자로 비교한다 (그래도 다르면 다시 쓴다).
+            return 0 if raw == text else 1
 
     if mode == "diff":
         try:

@@ -156,6 +156,8 @@ LIST
 )
 
 if [ ! -d "$HUD_SRC" ]; then
+  # 건너뛴 것은 ok 가 아니다. 사람이 판단할 것이므로 warn 으로 세어 요약에 남긴다.
+  warn=$((warn+1))
   printf '  건너뜀 ~/.claude/hud  (OMC 마켓플레이스가 아직 없음 — claude 실행 후 다시)\n'
 else
   hud_total=0; hud_stale=0; hud_missing_src=0
@@ -167,6 +169,7 @@ else
   done <<< "$HUD_FILES"
 
   if [ "$hud_missing_src" -gt 0 ]; then
+    warn=$((warn+1))
     printf '  건너뜀 ~/.claude/hud  (OMC 쪽 원본 %d개 없음 — 버전이 바뀐 듯)\n' "$hud_missing_src"
   elif [ "$hud_stale" -eq 0 ]; then
     printf '  ok     ~/.claude/hud  (%d개)\n' "$hud_total"; ok=$((ok+1))
