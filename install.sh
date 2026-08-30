@@ -261,8 +261,10 @@ else
     sed -i '/^# >>> ai-agent-dotfiles >>>$/,/^# <<< ai-agent-dotfiles <<</d' "$HOME/.bashrc"
     printf '  갱신   .bashrc 블록\n'
   else
-    # 센티넬 없이 예전 방식으로 넣은 source 한 줄이 있으면 지운다 (중복 방지)
-    sed -i '/agent-dotfiles\/agents\.sh/d; /^# Claude Code 다중 계정/d' "$HOME/.bashrc"
+    # 센티넬 없이 예전 방식으로 넣은 source 한 줄이 있으면 지운다 (중복 방지).
+    # .bashrc 자체가 없는 새 머신도 있다 — 그때 sed 를 돌리면 에러만 샌다.
+    [ -f "$HOME/.bashrc" ] \
+      && sed -i '/agent-dotfiles\/agents\.sh/d; /^# Claude Code 다중 계정/d' "$HOME/.bashrc"
     printf '  추가   .bashrc 블록\n'
   fi
   { echo; cat "$REPO/shell/bashrc.snippet"; } >> "$HOME/.bashrc" || rc=1
