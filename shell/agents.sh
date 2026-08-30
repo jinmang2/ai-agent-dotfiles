@@ -2,6 +2,16 @@
 # 계정마다 CLAUDE_CONFIG_DIR 을 분리하되, skills/plugins/settings/hooks/hud 는
 # ~/.claude 의 것을 심링크로 공유합니다.
 
+# 이 저장소는 ~/.local/bin 에 agent-window-label 을 깐다. 훅은 절대경로로 부르지만
+# ccname 은 PATH 로 부르고, uv 로 깐 basedpyright(OMC 의 lsp_*)도 거기 있다.
+# 우분투 .profile 이 넣어주긴 하는데 "로그인 시점에 디렉토리가 이미 있을 때" 만이라,
+# 새 머신에서는 install.sh 가 그 디렉토리를 만드는 순서라 다음 로그인까지 빠져 있다.
+# 깔아놓고 못 찾는 상태가 되므로 여기서 보장한다. 이미 있으면 더하지 않는다.
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
 CLAUDE_SHARED_ROOT="$HOME/.claude"
 
 # ── 계정 등록 ─────────────────────────────────────────────────────────────
