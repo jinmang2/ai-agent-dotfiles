@@ -42,6 +42,7 @@ source ~/.bashrc
 ```
 agent/          두 도구가 공유하는 것
   window-label.sh    tmux 창 이름 (Claude·Codex 공용)
+  label-of.sh        라벨 규칙 한 벌 (훅과 셸이 함께 source)
   profiles.conf      프로필 → 마커 표
 claude/         Claude Code 전용
   settings.json      훅 8개 · 권한 · 플러그인 6개 · 스테이터스라인
@@ -76,6 +77,7 @@ local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
 |---|---|---|
 | `agent/window-label.sh` | 심링크 | `~/.local/bin/agent-window-label` |
 | `agent/profiles.conf` | 심링크 | `~/.config/agent-profiles.conf` |
+| `agent/label-of.sh` | 심링크 | `~/.config/agent-dotfiles/label-of.sh` |
 | `shell/agents.sh` | 심링크 | `~/.config/agent-dotfiles/agents.sh` |
 | `shell/aliases.sh` | 심링크 | `~/.config/agent-dotfiles/aliases.sh` |
 | `tmux/tmux.conf` | 심링크 | `~/.tmux.conf` |

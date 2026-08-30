@@ -10,12 +10,12 @@
 #   실제로 그런 창이 나왔다 — CLAUDE_CONFIG_DIR 만 걸린 채 실행된 세션이 team 계정을
 #   쓰면서 창에는 🔵(개인) 마커를 달고 있었다.  HUD 도 같은 값을 보므로 유도가 맞다.
 #   Claude Code 와 Codex 가 같은 스크립트를 공유한다 (훅 형식이 동일).
-# 라벨 우선순위: @cc_label(수동 작업명) > git 저장소 이름 > ~ > 디렉토리 이름
-#   git 브랜치는 일부러 쓰지 않는다 (수시로 바뀌어 식별에 도움이 안 됨).
+# 라벨 우선순위: @cc_label(수동 작업명) > agent/label-of.sh 의 규칙
+#   라벨 규칙 자체는 셸(shell/agents.sh)과 나눠 갖는 한 벌이다 — label-of.sh.
 set -u
 
 CONF="${AGENT_PROFILES_CONF:-$HOME/.config/agent-profiles.conf}"
-MAXLEN=24
+LABEL_LIB="${AGENT_LABEL_LIB:-$HOME/.config/agent-dotfiles/label-of.sh}"
 
 emoji="${1:-}"
 state="${2:-}"
@@ -59,24 +59,22 @@ if [ -r "$CONF" ]; then
   done < "$CONF"
 fi
 
+# 라벨 규칙이 없으면 이름을 짓지 않는다. 훅이 실패해도 에이전트 쪽엔 영향이 없어야
+# 하므로 조용히 빠진다 (./install.sh --check 가 링크 끊김을 잡아준다).
+[ -r "$LABEL_LIB" ] || exit 0
+. "$LABEL_LIB"
+
 # --- 라벨 ---
 label=$(tmux show -w -t "$TMUX_PANE" -v @cc_label 2>/dev/null)
-if [ -z "$label" ]; then
+if [ -n "$label" ]; then
+  label=$(_agent_label_fit "$label")
+else
   cwd=$(printf '%s' "$payload" \
     | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
   [ -n "$cwd" ] && [ -d "$cwd" ] || cwd=$(tmux display -p -t "$TMUX_PANE" '#{pane_current_path}' 2>/dev/null)
   [ -n "$cwd" ] || cwd=$PWD
-
-  if root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null) && [ -n "$root" ]; then
-    label=$(basename "$root")
-  elif [ "$cwd" = "$HOME" ]; then
-    label="~"
-  else
-    label=$(basename "$cwd")
-  fi
+  label=$(_agent_label_of "$cwd")
 fi
-
-[ ${#label} -gt $MAXLEN ] && label="${label:0:$((MAXLEN-1))}…"
 
 tmux rename-window -t "$TMUX_PANE" "$emoji$marker$label" 2>/dev/null
 [ -n "$state" ] && tmux set -w -t "$TMUX_PANE" @cc "$state" 2>/dev/null

@@ -226,42 +226,44 @@ claude() {
 #   에이전트    ->  ⏳🔵 붙은 이름          (agent/window-label.sh)
 #
 # 그래서 이모지가 붙어 있으면 그 창에 에이전트가 살아있다는 뜻이 된다.
-declare -A _CC_LABEL_CACHE=()
+#
+# 나뉘는 건 소유권이지 규칙이 아니다. 라벨을 짓는 규칙은 훅과 한 벌을 쓴다
+# (agent/label-of.sh). 없으면 창 이름 기능만 조용히 빠지고 나머지는 그대로 산다.
+AGENT_LABEL_LIB="${AGENT_LABEL_LIB:-$HOME/.config/agent-dotfiles/label-of.sh}"
 
-_cc_shell_window_name() {
-  [ -n "${TMUX_PANE:-}" ] || return 0
+if [ -r "$AGENT_LABEL_LIB" ]; then
+  . "$AGENT_LABEL_LIB"
 
-  local out cur manual want root
-  out=$(tmux display -p -t "$TMUX_PANE" "#{window_name}"$'\t'"#{@cc_label}" 2>/dev/null) || return 0
-  IFS=$'\t' read -r cur manual <<< "$out"
+  declare -A _CC_LABEL_CACHE=()
 
-  if [ -n "$manual" ]; then
-    want=$manual                      # ccname 으로 고정한 작업명이 최우선
-  else
-    want=${_CC_LABEL_CACHE[$PWD]-}    # git 호출은 디렉토리당 한 번만
-    if [ -z "$want" ]; then
-      if root=$(git rev-parse --show-toplevel 2>/dev/null) && [ -n "$root" ]; then
-        want=${root##*/}
-      elif [ "$PWD" = "$HOME" ]; then
-        want='~'
-      else
-        want=${PWD##*/}
+  _cc_shell_window_name() {
+    [ -n "${TMUX_PANE:-}" ] || return 0
+
+    local out cur manual want
+    out=$(tmux display -p -t "$TMUX_PANE" "#{window_name}"$'\t'"#{@cc_label}" 2>/dev/null) || return 0
+    IFS=$'\t' read -r cur manual <<< "$out"
+
+    if [ -n "$manual" ]; then
+      want=$(_agent_label_fit "$manual")   # ccname 으로 고정한 작업명이 최우선
+    else
+      want=${_CC_LABEL_CACHE[$PWD]-}       # git 호출은 디렉토리당 한 번만
+      if [ -z "$want" ]; then
+        want=$(_agent_label_of "$PWD")
+        _CC_LABEL_CACHE[$PWD]=$want
       fi
-      [ ${#want} -gt 24 ] && want="${want:0:23}…"
-      _CC_LABEL_CACHE[$PWD]=$want
     fi
-  fi
 
-  [ "$cur" = "$want" ] && return 0    # 이미 맞으면 tmux 호출 없이 끝
-  tmux rename-window -t "$TMUX_PANE" "$want" 2>/dev/null
-  tmux set -uw -t "$TMUX_PANE" @cc 2>/dev/null   # 다음 에이전트가 깨끗하게 시작하도록
-}
+    [ "$cur" = "$want" ] && return 0    # 이미 맞으면 tmux 호출 없이 끝
+    tmux rename-window -t "$TMUX_PANE" "$want" 2>/dev/null
+    tmux set -uw -t "$TMUX_PANE" @cc 2>/dev/null   # 다음 에이전트가 깨끗하게 시작하도록
+  }
 
-# 중복 등록 방지 (agents.sh 를 다시 source 해도 안전)
-case "${PROMPT_COMMAND:-}" in
-  *_cc_shell_window_name*) ;;
-  *) PROMPT_COMMAND="_cc_shell_window_name${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
-esac
+  # 중복 등록 방지 (agents.sh 를 다시 source 해도 안전)
+  case "${PROMPT_COMMAND:-}" in
+    *_cc_shell_window_name*) ;;
+    *) PROMPT_COMMAND="_cc_shell_window_name${PROMPT_COMMAND:+; $PROMPT_COMMAND}" ;;
+  esac
+fi
 
 # 현재 tmux 창의 작업명을 고정/해제.  Claude Code 안에서는 `!ccname 작업명` 으로.
 ccname() {

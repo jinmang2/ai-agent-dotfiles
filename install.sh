@@ -34,6 +34,7 @@ done
 LINKS=$(cat <<'LIST'
 agent/window-label.sh|$HOME/.local/bin/agent-window-label
 agent/profiles.conf|$HOME/.config/agent-profiles.conf
+agent/label-of.sh|$HOME/.config/agent-dotfiles/label-of.sh
 shell/agents.sh|$HOME/.config/agent-dotfiles/agents.sh
 shell/aliases.sh|$HOME/.config/agent-dotfiles/aliases.sh
 tmux/tmux.conf|$HOME/.tmux.conf
