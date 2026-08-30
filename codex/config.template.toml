@@ -28,10 +28,24 @@ USE_OMX_EXPLORE_CMD = "0"
 max_depth = 2
 
 [tui]
+# 상태줄은 **한 줄**이다. Claude Code 의 statusLine 은 명령을 꽂아 여러 줄을 찍을 수
+# 있지만(그래서 OMC HUD 가 예쁘다), codex 는 내장 항목 목록만 받는다. 줄 수를 늘리는
+# 옵션도, 명령을 꽂는 자리도 없다.
+#
+# 그래서 폭이 곧 예산이다. 76칸 터미널에서 OMX 기본값 7칸은 넘쳐서 잘렸다.
+# 고를 수 있는 항목은 19개이고 OMX 는 그중 7개만 배선해둔다 — estimated-thread-cost
+# 같은 건 아예 없다. codex 안에서 `/statusline` 을 치면 전체 목록을 검색하며 고를 수 있다.
+#
+# 고르는 기준은 "수시로 변하는가" 다.
+#   넣음   git-branch · context-remaining · used-tokens · estimated-thread-cost
+#          five-hour-limit · weekly-limit
+#   뺌     model-with-reasoning   혼자 20칸 가까이 먹는데 모델은 자주 안 바뀐다 (/model)
+#          total-input/output     used-tokens 한 칸으로 합쳐진다
+#          project-name·current-dir   tmux 창 이름이 이미 저장소를 보여준다 (중복)
+#          context-used           context-remaining 의 반대. 둘 다 넣을 이유가 없다
 status_line = [
-  "model-with-reasoning", "git-branch", "context-remaining",
-  "total-input-tokens", "total-output-tokens",
-  "five-hour-limit", "weekly-limit",
+  "git-branch", "context-remaining", "used-tokens",
+  "estimated-thread-cost", "five-hour-limit", "weekly-limit",
 ]
 
 # omo 플러그인 (sisyphuslabs 마켓플레이스).  어떤 MCP 서버를 켜고 끌지는 내 선택이라 이식한다.

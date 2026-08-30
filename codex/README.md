@@ -53,6 +53,22 @@ Codex 는 비관리 훅을 `<파일>:<이벤트>:<인덱스>:<인덱스>` 키로
 래퍼가 걸어준다 — 안 걸면 `window-label.sh` 의 기본값 `claude` 로 떨어져 Codex 창에
 🔵(개인 Claude) 마커가 붙는다. 도구를 구분하려고 만든 표시가 거짓말을 하게 된다.
 
+## 상태줄
+
+`/statusline` — codex 안에서 치면 검색되는 체크박스 목록이 뜬다. 고를 수 있는 항목이
+**19개**인데 OMX 가 배선해주는 건 7개뿐이라, `estimated-thread-cost` 처럼 쓸 만한 걸
+모르고 지나치기 쉽다. 두 달 동안 그랬다.
+
+`terminal_title` 도 같은 방식으로 `/terminal-title` 에서 고른다.
+
+**여러 줄은 안 된다.** Claude Code 의 statusLine 은 `{type:"command"}` 라 스크립트가
+찍는 걸 그대로 쓰지만(OMC HUD 가 여러 줄인 이유), codex 의 `[tui] status_line` 은
+내장 항목 배열이다. 줄 수를 늘리는 옵션이 없다. 좁은 터미널에서는 항목을 줄이는 게
+유일한 답이다 — 고른 값과 이유는 `config.template.toml` 의 `[tui]` 주석에 있다.
+
+`omx hud` 는 대안이 아니다. `--tmux` 로 분할 패널에 띄울 수는 있지만 들고 있는 값이
+OMX 워크플로 상태(ralph·autopilot 이 도는가)뿐이고 토큰·비용·한도는 아예 없다.
+
 ## 재설치
 
 ```bash
