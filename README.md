@@ -159,6 +159,23 @@ tmux 설정과 훅과 셸은 이 지점에서 결합돼 있다.
 계정마다 `CLAUDE_CONFIG_DIR` 를 분리하되 `skills/ plugins/ settings.json hooks/ hud/` 는
 `~/.claude` 것을 심링크로 공유한다. 계정당 추가 디스크 약 4KB.
 
+**단, 그 안에서 돌면서 쌓이는 상태는 계정별로 가른다.** 설정과 내려받은 덩어리만
+공유한다는 규칙이다. 어긴 대가를 한 번 치렀다 — `plugins/` 를 통째로 공유하는 바람에
+두 계정이 OMC 사용량 캐시 파일 하나를 나눠 써서, 마지막으로 렌더한 계정의 5시간·주간
+한도가 양쪽 HUD 에 다 떴다. TTL 이 지나도 최대 15분간 옛 값을 먼저 내주므로 한참
+굳어 있는다. 지금 계정별로 가르는 것:
+
+| 경로 | 무엇 |
+|---|---|
+| `plugins/oh-my-claudecode/` | OMC 사용량 캐시 (`.usage-cache-*.json`) |
+| `hooks/.omc/` | OMC 훅 상태 |
+| `hud/cache/` | 스테이터스라인 렌더 캐시 |
+| `plugins/installed_plugins.json` · `known_marketplaces.json` · `.last_inuse_sweep` | Claude Code 가 계정별로 다시 쓴다. `installPath` 가 config-dir 절대경로라 공유 자체가 불가능하다 |
+
+목록은 `shell/agents.sh` 의 `CLAUDE_ACCOUNT_LOCAL`. 처음 보는 자식이 생기면
+`claude-account-link` 가 `처음봄` 으로 알려주니, 상태인지 설정인지 판단해서 넣는다.
+`claude-accounts` 는 통째 심링크로 되돌아간 항목을 끊김으로 잡는다.
+
 계정을 늘리려면 `shell/agents.sh` 의 `CLAUDE_ACCOUNT_DIRS_<이름>` **한 줄**이면 된다.
 `claude-<이름>` 실행 함수와 `claude-accounts` 목록은 자동으로 따라온다.
 tmux 에서 구분하려면 `agent/profiles.conf` 에 마커 한 줄을 더한다.
