@@ -7,7 +7,7 @@
 | 항목 | 크기 | 성격 |
 |---|---|---|
 | `AGENTS.md` | 20.7KB | `<!-- omx:generated:agents-md -->` — OMX 생성 |
-| `agents/*.toml` | 22개 | OMX 설치물 |
+| `agents/*.toml` | 35개 | OMX 설치물 |
 | `skills/` `prompts/` | 29 + 37 | OMX 설치물 |
 | `config.toml` | 3.3KB | 절반이 훅 신뢰 해시 · 절대경로 · 프로젝트 trust — **기계 고유** |
 | `auth.json` | 4.6KB | **OAuth 토큰 — 절대 커밋 금지** |

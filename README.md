@@ -62,7 +62,7 @@ shell/
   bashrc.snippet     .bashrc 에 들어가는 블록
 scripts/
   merge-settings.py       공용 settings + 머신 오버레이 병합
-  test-merge-settings.py  그 병합 규칙의 테스트 (23개)
+  test-merge-settings.py  그 병합 규칙의 테스트 (28개)
 docs/           레퍼런스
   hooks.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
   hud.md                 스테이터스라인 원리 + omcHud 옵션 전체

@@ -1,7 +1,7 @@
 # 훅 레퍼런스 — Claude Code · Codex
 
 이 저장소의 `claude/settings.json` 과 `codex/hooks.snippet.json` 을 읽고 고치는 데 필요한 것.
-2026-08-29 기준 · Claude Code 2.1.251 · codex-cli 0.139.0.
+2026-08-30 기준 · Claude Code 2.1.251 · codex-cli 0.151.0.
 
 ## 두 도구의 훅 형식은 같다
 
