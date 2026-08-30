@@ -4,6 +4,8 @@
 *secret*
 *.pem
 *.key
+.env
+.env.*
 
 # 실행 상태 / 임시
 __pycache__/
