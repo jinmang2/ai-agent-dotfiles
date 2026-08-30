@@ -98,7 +98,7 @@ OMC_SKIP_HOOKS=keyword-detector,post-tool-use  # 골라서
 
 | 계열 | 개수 | 지금 쓸 수 있나 |
 |---|---|---|
-| `lsp_*` | 12 | **아니오.** 언어 서버가 하나도 안 깔려 있다. 자동 설치 안 하고 힌트만 반환 |
+| `lsp_*` | 12 | **재시작 후.** basedpyright 를 깔고 `OMC_PYTHON_LSP` 를 걸었다 — 아래 참고 |
 | `ast_grep_*` | 2 | **재시작 후.** 아래 참고 |
 | `wiki_*` | 7 | 예. `.omc/wiki` 에 마크다운으로 저장 |
 | `state_*` (+ `merge_readiness_*` 5) | 11 | 예. `.omc/state/` |
@@ -129,18 +129,38 @@ Error: Cannot find package '@ast-grep/napi' imported from
 
 교훈은 그대로다 — **파일이 있다 ≠ 도구가 돈다.** 도구 가용성은 한 번 불러서 확인한다.
 
-### lsp 를 켜려면
+### lsp 를 켜려면 — basedpyright 를 골랐다
 
 파이썬 서버는 `pyright` 가 아니다. `dist/tools/lsp/servers.js` 기준:
 
-| | 명령 | 설치 |
-|---|---|---|
-| 기본 | `ty server` | https://github.com/astral-sh/ty |
-| 옵션 | `basedpyright-langserver --stdio` | `uv tool install basedpyright` |
+| | 명령 | 설치 | 2026-08-30 시점 |
+|---|---|---|---|
+| 기본 | `ty server` | github.com/astral-sh/ty | **0.0.75** — 릴리스 116번인데 아직 0.0.x |
+| 선택 | `basedpyright-langserver --stdio` | `uv tool install basedpyright` | **1.39.10** (pyright 1.1.412 기반) |
 
-`OMC_PYTHON_LSP=basedpyright` 일 때만 두 번째를 쓴다 (정확히 그 문자열만 인정).
-셸에서 export 하는 자리는 `shell/agents.sh` 다. 둘 다 안 깔려 있고, 서버 설정은
-22종이 정의돼 있다 (typescript · rust-analyzer · gopls · clangd · jdtls 등).
+`OMC_PYTHON_LSP=basedpyright` 일 때만 두 번째를 쓴다 — `resolvePythonServer()` 가
+**정확히 그 문자열만** 인정한다. export 자리는 `shell/agents.sh`.
+
+성숙한 쪽을 먼저 켠다. 처음 켜보는데 기능이 부실하면 "LSP 가 별로" 라는 틀린 결론에
+도달하기 때문이다. 전환은 env var 한 줄이라 나중에 `ty` 와 비교하면 된다.
+서버 설정은 22종이 정의돼 있다 (typescript · rust-analyzer · gopls · clangd · jdtls 등).
+
+**검증**: `basedpyright-langserver --stdio` 에 `initialize` 를 직접 보내 응답을 받았다.
+`definitionProvider` · `referencesProvider` · `hoverProvider` · `renameProvider` ·
+`documentSymbolProvider` · `workspaceSymbolProvider` · `codeActionProvider` 7개를
+전부 광고한다 — lsp_* 12개가 이 위에 얹힌다.
+
+**주의 — 기본 엄격도가 매우 높다.** `scripts/merge-settings.py`(130줄)에 경고 **102개**가
+붙는데 거의 전부 `reportUnknown*` · `reportAny`, 즉 "타입 주석이 없다" 는 말이다.
+에러는 0개다. `--level error` 로 보면 `0 errors, 0 warnings`.
+
+```
+31 reportUnknownVariableType · 28 reportUnknownArgumentType · 12 reportUnknownParameterType
+11 reportUnknownMemberType   · 11 reportMissingParameterType · 8 reportAny
+```
+
+주석 없는 파이썬에 `lsp_diagnostics` 를 그냥 쓰면 이 벽을 받는다. 프로젝트별로
+`pyproject.toml` 의 `typeCheckingMode` 를 낮추는 게 맞다 — 전역 설정으로 풀 문제가 아니다.
 
 ## 실제 사용량 (2026-08-30 실측)
 

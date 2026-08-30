@@ -48,6 +48,11 @@ hud/find-node.sh hud/lib hud/omc-hud-cache.sh hud/omc-hud.mjs"
 # (user 스코프 설정 파일은 settings.json 하나뿐) 셸에서 export 한다.
 export ALLOW_ULTRAGOAL_WITHOUT_GOAL=1
 
+# OMC 의 lsp_* 도구 12개가 쓸 파이썬 언어 서버.  기본값은 ty 인데 아직 0.0.x 라
+# basedpyright(1.39.x, pyright 포크)를 쓴다.  OMC 는 정확히 이 문자열만 인정한다
+# (dist/tools/lsp/servers.js 의 resolvePythonServer).  설치: uv tool install basedpyright
+export OMC_PYTHON_LSP=basedpyright
+
 # 등록된 계정 이름 목록 (personal 은 ~/.claude 자체라 항상 맨 앞)
 _claude_account_names() {
   local v
