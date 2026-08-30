@@ -1,11 +1,15 @@
 # 셸 alias / 함수.  ~/.bashrc 에서 source 해서 씁니다 (shell/bashrc.snippet).
 # 머신을 안 가리는 것만 둡니다. 언어·런타임 환경(conda·nvm·CUDA)은 프로젝트 소유입니다.
+#
+# 예외 하나: gpuw 는 GPU 있는 머신에서만 뜻이 있습니다. 없는 머신에서 쳐도
+# "nvidia-smi: command not found" 로 끝날 뿐 다른 걸 망가뜨리지 않아서, 오버레이로
+# 내리는 대신 여기 두고 예외라고 적어둡니다. 부작용이 생기는 순간 내려야 합니다.
 
 # 우분투 기본 .bashrc 의 `alias ll='ls -alF'` 를 덮어씁니다.
 # 이 파일이 .bashrc 끝에서 source 되므로 이쪽이 이깁니다.
 alias ll='ls -alFh --color=auto --group-directories-first'
 
-# GPU 실시간 감시
+# GPU 실시간 감시 (GPU 없는 머신에서는 그냥 실패한다 — 위 '예외 하나' 참고)
 alias gpuw='watch -n1 nvidia-smi'
 
 # tmux 세션 진입.
