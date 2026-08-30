@@ -242,7 +242,20 @@ fi
 # 끝에 붙이는 이유: 신뢰 상태 키가 "<파일>:<이벤트>:<블록번호>:0" 이라, 앞에 끼우면
 # 기존 OMX 훅 7개의 승인이 전부 무효가 된다.
 if [ -f "$HOME/.codex/hooks.json" ]; then
-  if grep -q 'agent-window-label' "$HOME/.codex/hooks.json" 2>/dev/null; then
+  # 스키마부터 본다.  codex 는 최상위에 description|hooks 만 받는데, 옛 버전이 남긴
+  # state (신뢰 해시) 가 남아 있으면 **파일 전체가 조용히 무시된다** — 실제로 그 상태로
+  # 얼마간 돌고 있었고, /hooks 화면을 열기 전까지 아무도 몰랐다.
+  # 신뢰 상태의 정본은 config.toml 의 [hooks.state."..."] 다.
+  codex_bad_keys=$(python3 -c "
+import json,sys
+try: d=json.load(open('$HOME/.codex/hooks.json',encoding='utf-8'))
+except Exception as e: print('parse:'+str(e)[:40]); sys.exit()
+print(','.join(k for k in d if k not in ('description','hooks')))" 2>/dev/null)
+  if [ -n "$codex_bad_keys" ]; then
+    warn=$((warn+1))
+    printf '  깨짐   ~/.codex/hooks.json  (codex 가 통째로 무시합니다: %s)\n' "$codex_bad_keys"
+    printf '         최상위는 description|hooks 만 허용.  신뢰 상태는 config.toml 소관\n'
+  elif grep -q 'agent-window-label' "$HOME/.codex/hooks.json" 2>/dev/null; then
     printf '  ok     ~/.codex/hooks.json  (창 이름 훅)\n'; ok=$((ok+1))
   else
     warn=$((warn+1))

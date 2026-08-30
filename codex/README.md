@@ -38,6 +38,11 @@ Codex 훅 형식은 Claude Code 의 `settings.json` `hooks` 와 **스키마가 �
 Codex 는 비관리 훅을 `<파일>:<이벤트>:<인덱스>:<인덱스>` 키로 신뢰 상태를 추적하므로,
 배열에 항목을 끼워넣으면 **인덱스가 밀려 기존 훅의 신뢰가 깨질 수 있다.**
 
+0. **최상위 키를 먼저 본다.** codex 는 `description` 과 `hooks` 만 받는다.
+   옛 버전이 남긴 `state`(신뢰 해시)가 최상위에 있으면 **파일 전체가 조용히 무시된다** —
+   훅이 하나도 안 돈다. 실제로 그 상태로 얼마간 돌고 있었고, `/hooks` 화면을 열기
+   전까지 아무도 몰랐다. 신뢰 상태의 정본은 `config.toml` 의 `[hooks.state."..."]` 이므로
+   hooks.json 쪽 `state` 는 지워도 된다. `./install.sh --check` 가 이걸 본다.
 1. 백업: `cp ~/.codex/hooks.json ~/.codex/hooks.json.bak`
 2. `hooks.snippet.json` 의 각 이벤트를 `~/.codex/hooks.json` 의 `"hooks"` 객체에
    **배열 끝에 append** (기존 항목 앞에 넣지 말 것)
