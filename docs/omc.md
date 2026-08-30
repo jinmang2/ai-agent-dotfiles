@@ -94,12 +94,13 @@ OMC_SKIP_HOOKS=keyword-detector,post-tool-use  # 골라서
 
 서버 이름이 `t` 라서 실제 도구명은 `mcp__plugin_oh-my-claudecode_t__<이름>` 이다.
 코드에 정의된 것은 63개이고, `interop_*` 8개가 기본 비활성이라 **기본 등록은 55개**다.
-(실제 세션에 노출된 것은 54개였다 — `state_migrate_non_git` 하나가 빠지는데 이유는 확인 못 했다.)
+(4.15.10 세션에서는 54개만 노출되고 `state_migrate_non_git` 이 빠져 있었는데,
+5.0.2 로 재시작하니 55개가 다 나왔다 — 버전 차이였다.)
 
 | 계열 | 개수 | 지금 쓸 수 있나 |
 |---|---|---|
-| `lsp_*` | 12 | **재시작 후.** basedpyright 를 깔고 `OMC_PYTHON_LSP` 를 걸었다 — 아래 참고 |
-| `ast_grep_*` | 2 | **재시작 후.** 아래 참고 |
+| `lsp_*` | 12 | **예** (재시작 후 확인). basedpyright + `OMC_PYTHON_LSP` — 아래 참고 |
+| `ast_grep_*` | 2 | **예** (재시작 후 확인). 아래 참고 |
 | `wiki_*` | 7 | 예. `.omc/wiki` 에 마크다운으로 저장 |
 | `state_*` (+ `merge_readiness_*` 5) | 11 | 예. `.omc/state/` |
 | `notepad_*` | 6 | 예. `.omc/notepad.md` |
@@ -129,6 +130,17 @@ Error: Cannot find package '@ast-grep/napi' imported from
 
 교훈은 그대로다 — **파일이 있다 ≠ 도구가 돈다.** 도구 가용성은 한 번 불러서 확인한다.
 
+재시작 후 다시 불러 확인했다. 이번엔 돌았지만 결과가 `No matches` 였는데, 그건 패턴이
+틀린 것이었다. **ast-grep 패턴은 완결된 AST 노드여야 한다.**
+
+```
+안 됨   def $NAME($$$ARGS)          ← 파이썬 함수는 본문이 있어야 노드가 된다
+됨      def $NAME($$$ARGS):
+            $$$BODY                  ← merge-settings.py 에서 6개 매치
+```
+
+"에러 없이 돌았다" 와 "제대로 물어봤다" 는 다르다. 빈 결과가 나오면 패턴부터 의심한다.
+
 ### lsp 를 켜려면 — basedpyright 를 골랐다
 
 파이썬 서버는 `pyright` 가 아니다. `dist/tools/lsp/servers.js` 기준:
@@ -149,6 +161,20 @@ Error: Cannot find package '@ast-grep/napi' imported from
 `definitionProvider` · `referencesProvider` · `hoverProvider` · `renameProvider` ·
 `documentSymbolProvider` · `workspaceSymbolProvider` · `codeActionProvider` 7개를
 전부 광고한다 — lsp_* 12개가 이 위에 얹힌다.
+재시작 후 `lsp_servers` 가 basedpyright 를 **Installed** 로 잡는 것도 확인했다
+(나머지 19종은 Not Installed 로 설치 힌트와 함께 나온다).
+
+### 그래서 grep 과 뭐가 다른가
+
+`merge-settings.py` 의 `merge` 함수를 찾아보면 차이가 그대로 보인다.
+
+```
+grep -n "merge"            10줄   ← 파일명 언급(docstring 3줄) · merged 변수 · 파라미터까지
+lsp_find_references         3곳   ← 18:5 선언 · 25:26 재귀 호출 · 46:14 render 안의 호출
+```
+
+**grep 은 글자를 찾고 LSP 는 의미를 안다.** "이 함수 시그니처를 바꾸면 어디가 깨지나" 를
+물을 때 이 차이가 결과를 가른다. 대체가 아니라 보완이다 — 넓게 훑는 건 여전히 grep 이 빠르다.
 
 **주의 — 기본 엄격도가 매우 높다.** `scripts/merge-settings.py`(130줄)에 경고 **102개**가
 붙는데 거의 전부 `reportUnknown*` · `reportAny`, 즉 "타입 주석이 없다" 는 말이다.
