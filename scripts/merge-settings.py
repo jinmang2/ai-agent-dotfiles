@@ -76,6 +76,11 @@ def diff_report(current, merged):
             if isinstance(a, list) and isinstance(b, list):
                 gone = [x for x in a if x not in b]
                 added = [x for x in b if x not in a]
+                if not gone and not added:
+                    # 항목은 그대로고 순서만 다르다 (공용에 있던 줄이 오버레이로
+                    # 옮겨가면 이렇게 된다). 아무것도 안 찍으면 왜 "변경" 인지 알 수 없다.
+                    lines.append(f"    순서  {key}  (항목 {len(a)}개 그대로, 순서만 다름)")
+                    continue
                 lines.append(f"    변경  {key}  ({len(a)}개 -> {len(b)}개)")
                 for x in gone:
                     lines.append(f"            - {_fmt(x, 54)}")

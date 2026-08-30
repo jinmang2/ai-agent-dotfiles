@@ -61,7 +61,7 @@ shell/
   bashrc.snippet     .bashrc 에 들어가는 블록
 scripts/
   merge-settings.py       공용 settings + 머신 오버레이 병합
-  test-merge-settings.py  그 병합 규칙의 테스트 (22개)
+  test-merge-settings.py  그 병합 규칙의 테스트 (23개)
 docs/           레퍼런스
   hooks.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
   hud.md                 스테이터스라인 원리 + omcHud 옵션 전체
@@ -152,6 +152,7 @@ tmux 설정과 훅과 셸은 이 지점에서 결합돼 있다.
 | `claude-team` | team 계정으로 Claude Code 실행 |
 | `ccname <작업명>` | 창 작업명 고정 (`--clear` 해제) |
 | `./install.sh --check` | 저장소 ↔ 설치 위치 점검. 어긋나면 무엇이 달라지는지 diff 출력 |
+| `./install.sh --ssh-diff` | `~/.ssh/config` 이 다를 때 그 차이까지 출력 (tailnet 호스트명이 나온다) |
 | `python3 scripts/test-merge-settings.py` | settings 병합 규칙 테스트 |
 
 ## 다중 계정

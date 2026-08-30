@@ -99,6 +99,14 @@ class Diff(unittest.TestCase):
         self.assertIn("삭제  b", lines)
         self.assertIn("추가  c", lines)
 
+    def test_순서만_다르면_그렇다고_말한다(self):
+        # 공용에 있던 권한 한 줄을 오버레이로 옮기면 집합은 같고 순서만 바뀐다.
+        # 예전엔 "(2개 -> 2개)" 만 찍고 항목을 하나도 안 보여줘서 이유를 알 수 없었다.
+        lines = "\n".join(ms.diff_report({"p": {"allow": ["x", "y"]}},
+                                         {"p": {"allow": ["y", "x"]}}))
+        self.assertIn("순서", lines)
+        self.assertNotIn("->", lines)
+
     def test_같으면_아무것도_안_나온다(self):
         self.assertEqual(ms.diff_report({"a": 1}, {"a": 1}), [])
 

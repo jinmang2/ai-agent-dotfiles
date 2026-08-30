@@ -28,7 +28,7 @@ claude                                          # 3. 플러그인 자동 설치 
 | `tmux ls` | 세션이 뜨는지 |
 | tmux 안에서 `cd ~/어떤저장소` | 창 이름이 저장소 이름으로 바뀌는지 (이모지 없음) |
 | 그 창에서 `claude` 실행 | 창 이름에 `⏳🔵` 가 붙는지, 종료하면 다시 빠지는지 |
-| `python3 scripts/test-merge-settings.py` | 22개 통과 |
+| `python3 scripts/test-merge-settings.py` | 23개 통과 |
 
 창 이름이 안 붙으면 tmux 밖이거나 `automatic-rename` 이 켜져 있는 것이다.
 훅 자체는 이렇게 직접 찔러본다:

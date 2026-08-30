@@ -27,8 +27,7 @@
       "Bash(gh repo view *)",
       "Bash(gh pr view *)",
       "Bash(gh pr list *)",
-      "Bash(gh issue list *)",
-      "Bash(~/ai-agent-dotfiles/install.sh --check)"
+      "Bash(gh issue list *)"
     ]
   },
   "hooks": {

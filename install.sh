@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # 이 저장소의 설정을 각 도구의 설정 위치로 심링크한다.
-#   ./install.sh          설치 / 재설치 (몇 번 돌려도 안전)
-#   ./install.sh --check  링크 상태만 점검
+#   ./install.sh             설치 / 재설치 (몇 번 돌려도 안전)
+#   ./install.sh --check     링크 상태만 점검
+#   ./install.sh --ssh-diff  ~/.ssh/config 이 다를 때 그 차이까지 출력
+#                            (--check 와 같이 쓴다. tailnet 호스트명이 화면에 나온다)
 #
 # 심링크이므로 ~/.claude 에서 고쳐도 곧바로 이 저장소의 변경으로 잡힌다.
 # ~/.claude 자체는 git 저장소가 아니다 (자격증명·대화기록이 들어있으므로).
@@ -17,7 +19,15 @@ HOST="${AGENT_DOTFILES_HOST:-$(hostname | tr '[:upper:]' '[:lower:]')}"
 HOSTDIR="$REPO/local/hosts/$HOST"
 OVERLAY="$HOSTDIR/settings-overlay.json"
 CHECK=0
-[ "${1:-}" = "--check" ] && CHECK=1
+SSH_DIFF=0
+for arg in "$@"; do
+  case "$arg" in
+    --check)    CHECK=1 ;;
+    --ssh-diff) SSH_DIFF=1 ;;
+    -h|--help)  sed -n '2,12p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    *) printf '알 수 없는 옵션: %s  (--check | --ssh-diff)\n' "$arg" >&2; exit 2 ;;
+  esac
+done
 
 # 저장소경로:설치위치.  한 줄에 하나. 경로에 공백이 있어도 안전하도록 while read 로 읽는다.
 # ~/.claude/agents 는 일부러 없다 — 서브에이전트는 플러그인으로 배포된다 (docs/plugins.md).
@@ -32,7 +42,8 @@ LIST
 )
 
 stamp=$(date +%Y%m%d-%H%M%S)
-rc=0; ok=0; bad=0
+# bad = 이 스크립트가 고칠 수 있는 것.  warn = 사람이 판단할 것(자동으로 안 건드린다).
+rc=0; ok=0; bad=0; warn=0
 
 printf '저장소: %s\n호스트: %s\n\n' "$REPO" "$HOST"
 
@@ -191,22 +202,42 @@ if [ -f "$SRC_SSH" ]; then
     printf '  ok     ~/.ssh/config\n'; ok=$((ok+1))
   else
     # 손대지 않는다. ssh 설정은 잘못 덮어쓰면 접속 자체가 막힌다.
-    printf '  다름   ~/.ssh/config  (직접 판단하세요 — 자동으로 덮어쓰지 않습니다)\n'
-    diff -u "$DST_SSH" "$SRC_SSH" 2>/dev/null | sed -n '3,$p' | sed 's/^/    /' | head -30
+    # ok 도 bad 도 아니다 — 사람이 판단할 것이므로 warn 으로 세고 요약에 남긴다.
+    warn=$((warn+1))
+    n=$(diff -u "$DST_SSH" "$SRC_SSH" 2>/dev/null | sed -n '3,$p' | grep -c '^[+-]')
+    printf '  다름   ~/.ssh/config  (%s줄 — 직접 판단하세요, 자동으로 덮어쓰지 않습니다)\n' "$n"
+    if [ "$SSH_DIFF" = 1 ]; then
+      diff -u "$DST_SSH" "$SRC_SSH" 2>/dev/null | sed -n '3,$p' | sed 's/^/    /' | head -30
+    else
+      # 기본값으로는 찍지 않는다. tailnet 호스트명·사용자명이 든 비공개 서브모듈 내용이라,
+      # 에이전트가 --check 를 돌리기만 해도 대화 기록에 그대로 남는다.
+      printf '         차이 보기: ./install.sh --ssh-diff\n'
+    fi
   fi
 fi
 
 # ── .bashrc ─────────────────────────────────────────────────────────────
 # 예전 방식으로 손수 넣은 `alias claude-team=...` 이 남아 있으면 agents.sh 의
 # claude-team 함수를 가린다 (alias 확장이 함수 조회보다 먼저 일어난다).
-if grep -qE '^\s*alias\s+claude-[a-z]+=' "$HOME/.bashrc" 2>/dev/null; then
+#
+# 계정 이름은 shell/agents.sh 의 CLAUDE_ACCOUNT_DIRS_<이름> 한 곳에서만 늘어난다
+# (docs/machines.md). 그 목록으로 패턴을 만들어 **등록된 계정 이름만** 건드린다.
+# 예전엔 claude-[a-z]+ 를 통째로 잡아서, 손수 만든 claude-yolo 같은 무관한 alias 까지
+# 주석 처리하면서 정작 claude-team2 · claude_work 는 놓쳤다.
+ACCOUNTS=""
+while read -r a; do
+  [ -n "$a" ] && ACCOUNTS="${ACCOUNTS:+$ACCOUNTS|}$a"
+done < <(sed -n 's/^CLAUDE_ACCOUNT_DIRS_\([A-Za-z0-9_]\{1,\}\)=.*/\1/p' "$REPO/shell/agents.sh")
+
+if [ -n "$ACCOUNTS" ] \
+   && grep -qE "^[[:space:]]*alias[[:space:]]+claude-($ACCOUNTS)=" "$HOME/.bashrc" 2>/dev/null; then
   if [ "$CHECK" = 1 ]; then
-    printf '  충돌   .bashrc 의 alias claude-* 가 agents.sh 함수를 가림 → ./install.sh\n'
+    printf '  충돌   .bashrc 의 alias claude-{%s} 가 agents.sh 함수를 가림 → ./install.sh\n' "$ACCOUNTS"
     bad=$((bad+1))
   else
     cp "$HOME/.bashrc" "$HOME/.bashrc.pre-install-$stamp" 2>/dev/null
-    sed -i -E 's/^(\s*alias\s+claude-[a-z]+=.*)$/# [ai-agent-dotfiles] agents.sh 의 함수로 대체됨: \1/' "$HOME/.bashrc" \
-      && printf '  주석   .bashrc 의 alias claude-* (agents.sh 함수로 대체)\n' || rc=1
+    sed -i -E "s/^([[:space:]]*alias[[:space:]]+claude-($ACCOUNTS)=.*)$/# [ai-agent-dotfiles] agents.sh 의 함수로 대체됨: \1/" "$HOME/.bashrc" \
+      && printf '  주석   .bashrc 의 alias claude-{%s} (agents.sh 함수로 대체)\n' "$ACCOUNTS" || rc=1
   fi
 fi
 
@@ -248,7 +279,10 @@ elif [ ! -d "$HOSTDIR" ]; then
 fi
 
 if [ "$CHECK" = 1 ]; then
-  [ "$bad" -eq 0 ] && echo "전부 정상 ($ok개)" || echo "복구 필요 $bad개  →  ./install.sh"
+  if [ "$bad" -eq 0 ]; then printf '전부 정상 (%d개)' "$ok"
+  else                      printf '복구 필요 %d개  →  ./install.sh' "$bad"; fi
+  [ "$warn" -gt 0 ] && printf '  ·  확인 필요 %d개' "$warn"
+  echo
   exit 0
 fi
 
