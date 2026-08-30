@@ -210,12 +210,15 @@ npm i -g @openai/codex oh-my-codex && omx setup               # Codex (선택)
 git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack   # 선택
 ```
 
-`settings.json` 은 저장소에 없는 두 가지를 참조한다. 둘 다 조용히 실패하므로 미리 알아둔다.
+이 저장소의 설정은 **저장소에 없는 것 몇 가지를 이름으로 가리킨다.** 전부 조용히
+실패하므로 `./install.sh --check` 가 세어서 `확인 필요` 로 보여준다.
 
-| 참조 | 없으면 | 복원 |
+| 어디서 참조 | 없으면 | 복원 |
 |---|---|---|
-| `~/.claude/skills/gstack/...` (훅 3개) | `AskUserQuestion` 훅만 실패 | gstack clone |
-| `~/.claude/hud/omc-hud-cache.sh` (statusLine) | 스테이터스라인이 빈 줄 | `./install.sh` (`claude` 한 번 실행 뒤) |
+| `settings.json` → `~/.claude/skills/gstack/...` (훅 3개) | `AskUserQuestion` 훅만 실패 | gstack clone |
+| `settings.json` → `~/.claude/hud/omc-hud-cache.sh` (statusLine) | 스테이터스라인이 빈 줄 | `./install.sh` (`claude` 한 번 실행 뒤) |
+| `agents.sh` → `OMC_PYTHON_LSP=basedpyright` | OMC 의 `lsp_*` 12개가 죽음 | `uv tool install basedpyright` |
+| `omc` CLI (npm 전역) | `omc setup` 이 옛 `CLAUDE.md` 를 씀 | `npm i -g oh-my-claude-sisyphus@<플러그인 버전>` |
 
 HUD 스크립트는 OMC 마켓플레이스 클론(`~/.claude/plugins/marketplaces/omc/scripts/`)에
 들어 있고, `install.sh` 가 거기서 5개 파일을 `~/.claude/hud/` 로 **복사**한다.

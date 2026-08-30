@@ -188,6 +188,55 @@ else
   fi
 fi
 
+# ── 저장소가 참조하는 외부 설치물 ────────────────────────────────────────
+# 여기 있는 것들은 저장소가 담지 않지만 저장소의 설정이 이름으로 가리킨다.
+# 없어도 나머지는 정상 동작하고, 해당 기능만 조용히 죽는다 — 그래서 세어서 보여준다.
+# 고칠 수 있는 게 아니라(bad) 사람이 판단할 것(warn)이다.
+
+# shell/agents.sh 가 export 하는 파이썬 언어 서버.  없으면 OMC 의 lsp_* 12개가
+# 전부 "설치 힌트만 반환" 으로 죽는다 (docs/omc.md).
+if grep -q '^export OMC_PYTHON_LSP=' "$REPO/shell/agents.sh" 2>/dev/null; then
+  lsp_want=$(sed -n 's/^export OMC_PYTHON_LSP=\(.*\)$/\1/p' "$REPO/shell/agents.sh")
+  case "$lsp_want" in basedpyright) lsp_cmd=basedpyright-langserver ;; *) lsp_cmd=ty ;; esac
+  if command -v "$lsp_cmd" >/dev/null 2>&1; then
+    printf '  ok     %s  (lsp_* 12개)\n' "$lsp_cmd"; ok=$((ok+1))
+  else
+    warn=$((warn+1))
+    printf '  없음   %s  (agents.sh 가 OMC_PYTHON_LSP=%s 를 걸어둠 → lsp_* 가 죽습니다)\n' \
+      "$lsp_cmd" "$lsp_want"
+    [ "$lsp_want" = basedpyright ] && printf '         설치: uv tool install basedpyright\n'
+  fi
+fi
+
+# OMC 플러그인과 npm CLI 의 버전.  어긋나면 omc setup 이 옛 CLAUDE.md 를 쓴다.
+# 실제로 이 저장소는 두 달간 플러그인 4.15.10 에 묶여 있는 걸 아무도 몰랐다.
+omc_plug=$(python3 - <<'PYV' 2>/dev/null
+import json, os
+p = os.path.expanduser("~/.claude/plugins/installed_plugins.json")
+try:
+    d = json.load(open(p, encoding="utf-8"))
+    print(d["plugins"]["oh-my-claudecode@omc"][0]["version"])
+except Exception:
+    pass
+PYV
+)
+omc_cli=$(omc --version 2>/dev/null | head -1 | tr -d '[:space:]')
+if [ -n "$omc_plug" ] || [ -n "$omc_cli" ]; then
+  if [ -z "$omc_cli" ]; then
+    warn=$((warn+1))
+    printf '  없음   omc CLI  (플러그인 %s.  설치: npm i -g oh-my-claude-sisyphus@%s)\n' \
+      "${omc_plug:-?}" "${omc_plug:-latest}"
+  elif [ "$omc_plug" = "$omc_cli" ]; then
+    printf '  ok     omc %s  (플러그인 = CLI)\n' "$omc_cli"; ok=$((ok+1))
+  else
+    warn=$((warn+1))
+    printf '  다름   omc  플러그인 %s vs CLI %s  (omc setup 이 옛 CLAUDE.md 를 씁니다)\n' \
+      "${omc_plug:-?}" "$omc_cli"
+    printf '         맞추기: claude plugin update oh-my-claudecode@omc && npm i -g oh-my-claude-sisyphus@%s\n' \
+      "${omc_plug:-latest}"
+  fi
+fi
+
 # ── ~/.ssh/config ────────────────────────────────────────────────────────
 # 심링크하지 않는다. 600 권한이 필요하고, 도구들이 이 파일을 직접 고치기도 한다.
 # 없으면 비공개 서브모듈의 것을 복사하고, 이미 있으면 손대지 않고 차이만 보여준다.
@@ -303,13 +352,19 @@ cat <<'NEXT'
        깔린 뒤 ./install.sh 를 한 번 더 → ~/.claude/hud (스테이터스라인) 이
        OMC 플러그인에서 채워집니다.
 
-  2. gstack  (settings.json 의 AskUserQuestion 훅이 참조, 약 1.5G)
+  2. 저장소가 이름으로 가리키는 외부 설치물
+       npm i -g oh-my-claude-sisyphus && omc setup    # omc CLI (플러그인과 별개)
+       uv tool install basedpyright                   # agents.sh 의 OMC_PYTHON_LSP
+       둘 다 없어도 나머지는 돌지만 해당 기능만 조용히 죽습니다.
+       ./install.sh --check 가 "확인 필요" 로 세어 보여줍니다.
+
+  3. gstack  (settings.json 의 AskUserQuestion 훅이 참조, 약 1.5G)
        git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
        설치 전까지 해당 훅만 조용히 실패합니다 (나머지 기능엔 영향 없음).
 
-  3. team 계정 (선택)
+  4. team 계정 (선택)
        claude-account-link team && claude-team    # 실행 후 /login
 
-  4. source ~/.bashrc   또는 새 셸 열기
+  5. source ~/.bashrc   또는 새 셸 열기
 NEXT
 exit $rc

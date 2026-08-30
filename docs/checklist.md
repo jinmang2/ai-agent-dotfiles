@@ -28,7 +28,7 @@ claude                                          # 3. 플러그인 자동 설치 
 | `tmux ls` | 세션이 뜨는지 |
 | tmux 안에서 `cd ~/어떤저장소` | 창 이름이 저장소 이름으로 바뀌는지 (이모지 없음) |
 | 그 창에서 `claude` 실행 | 창 이름에 `⏳🔵` 가 붙는지, 종료하면 다시 빠지는지 |
-| `python3 scripts/test-merge-settings.py` | 23개 통과 |
+| `python3 scripts/test-merge-settings.py` | 28개 통과 |
 
 창 이름이 안 붙으면 tmux 밖이거나 `automatic-rename` 이 켜져 있는 것이다.
 훅 자체는 이렇게 직접 찔러본다:
@@ -55,16 +55,26 @@ SSH 키 (`ssh-keygen` → `gh ssh-key add`) · gh · Claude · Codex 로그인.
 프레임워크는 재설치로 복원한다 — 저장소에 담지 않는다:
 
 ```bash
+npm i -g oh-my-claude-sisyphus && omc setup                                # OMC CLI
 npm i -g @openai/codex oh-my-codex && omx setup                            # Codex + OMX
+uv tool install basedpyright                                               # lsp_* 12개
 git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack   # 선택 (1.5G)
 ```
+
+**`omc` CLI 는 플러그인과 별개로 깔린다.** 플러그인만 올리면 CLI 가 옛 버전에 남고,
+그 상태로 `omc setup` 을 돌리면 옛 `CLAUDE.md` 를 쓴다. 두 버전이 어긋나면
+`./install.sh --check` 가 알려준다.
+
+**`basedpyright` 는 `shell/agents.sh` 가 이름으로 가리킨다** (`OMC_PYTHON_LSP`).
+안 깔면 OMC 의 `lsp_*` 12개가 전부 설치 힌트만 반환하고 조용히 죽는다.
+이것도 `--check` 가 잡는다. 자세한 건 `docs/omc.md`.
 
 `~/.claude/hud/` 는 반쯤 다르다 — 저장소에 원본은 없지만, OMC 플러그인이 깔리고 나면
 `install.sh` 가 마켓플레이스 클론에서 5개 파일을 복사해준다. 그래서 `claude` 를 한 번
 띄운 뒤 `./install.sh` 를 다시 돌리는 순서가 된다. 그전까지 스테이터스라인이 비어
-보이는 건 정상이다. `omc setup` 은 `~/.claude/CLAUDE.md` 까지 덮어쓰므로 쓰지 않는다.
+보이는 건 정상이다. `omc setup` 은 OMC 버전을 올린 뒤에 돌린다 — HUD 와 `CLAUDE.md` 를 새 버전에 맞춘다.
 
-`~/.claude/CLAUDE.md` 도 여기 속한다. `<!-- OMC:START -->` … `<!-- OMC:END -->` 사이는
+`omc setup` 을 꺼릴 이유는 없다. `~/.claude/CLAUDE.md` 도 여기 속한다. `<!-- OMC:START -->` … `<!-- OMC:END -->` 사이는
 OMC 소유이고 `omc setup` 이 그 블록만 갈아끼운다 (`<!-- OMC:VERSION:... -->` 표시가
 있다). 바깥에 쓴 개인 지침은 `<!-- User customizations -->` 아래로 보존되고, 매번
 `CLAUDE.md.backup.<타임스탬프>` 가 남는다. 즉 덮어쓰기가 아니라 우리 `.bashrc`
