@@ -59,9 +59,13 @@ npm i -g @openai/codex oh-my-codex && omx setup                            # Cod
 git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack   # 선택 (1.5G)
 ```
 
-`~/.claude/hud/` 도 마찬가지다 — `settings.json` 의 statusLine 이 참조하지만 OMC
-설치물이라 저장소에 없다. `omc setup` 전까지 스테이터스라인이 비어 보이는 건 정상이다.
+`~/.claude/hud/` 는 반쯤 다르다 — 저장소에 원본은 없지만, OMC 플러그인이 깔리고 나면
+`install.sh` 가 마켓플레이스 클론에서 5개 파일을 복사해준다. 그래서 `claude` 를 한 번
+띄운 뒤 `./install.sh` 를 다시 돌리는 순서가 된다. 그전까지 스테이터스라인이 비어
+보이는 건 정상이다. `omc setup` 은 `~/.claude/CLAUDE.md` 까지 덮어쓰므로 쓰지 않는다.
 
-`~/.claude/CLAUDE.md` 도 여기 속한다. OMC 가 소유하고 `omc setup` 이 덮어쓰므로
-(`<!-- OMC:VERSION:... -->` 표시가 있다) 심링크로 걸면 `~/.gitconfig` 와 같은 이유로
-끊긴다. 개인 지침을 넣었다면 `omc setup` 뒤에 다시 넣어야 한다.
+`~/.claude/CLAUDE.md` 도 여기 속한다. `<!-- OMC:START -->` … `<!-- OMC:END -->` 사이는
+OMC 소유이고 `omc setup` 이 그 블록만 갈아끼운다 (`<!-- OMC:VERSION:... -->` 표시가
+있다). 바깥에 쓴 개인 지침은 `<!-- User customizations -->` 아래로 보존되고, 매번
+`CLAUDE.md.backup.<타임스탬프>` 가 남는다. 즉 덮어쓰기가 아니라 우리 `.bashrc`
+블록과 같은 센티넬 병합이다.

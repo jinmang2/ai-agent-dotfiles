@@ -64,6 +64,7 @@ scripts/
   test-merge-settings.py  그 병합 규칙의 테스트 (22개)
 docs/           레퍼런스
   hooks.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
+  hud.md                 스테이터스라인 원리 + omcHud 옵션 전체
 local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
   ssh-config           tailnet 별칭 (전 머신 공용)
   hosts/<호스트>/       이 머신에서만 쓰는 값
@@ -169,8 +170,8 @@ tmux 에서 구분하려면 `agent/profiles.conf` 에 마커 한 줄을 더한�
 | `~/.claude/.credentials.json` · `~/.codex/auth.json` | OAuth 토큰 |
 | `projects/ sessions/ history.jsonl` | 대화 기록 전문 |
 | `~/.claude/skills/` (1.5G) · `plugins/` (634M) | 재설치로 복원 |
-| `~/.claude/hud/` | OMC 설치물. **`settings.json` 의 statusLine 이 이걸 참조한다** |
-| `~/.claude/CLAUDE.md` | OMC 생성물. `omc setup` 이 덮어쓴다 |
+| `~/.claude/hud/` | OMC 설치물. `install.sh` 가 플러그인 클론에서 복사해온다 (아래) |
+| `~/.claude/CLAUDE.md` | OMC 생성물. `<!-- OMC:START -->` 블록은 OMC 소유 (아래) |
 | `~/.codex/AGENTS.md` · `agents/` · `skills/` | OMX 생성물 |
 | `config.toml` 의 절대경로 · 프로젝트 trust · 훅 해시 | 기계 고유 |
 | `config.toml` 의 `sandbox_mode` · `approval_policy` | 보안 태세. 머신마다 직접 정한다 |
@@ -192,10 +193,32 @@ git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack   # 선
 | 참조 | 없으면 | 복원 |
 |---|---|---|
 | `~/.claude/skills/gstack/...` (훅 3개) | `AskUserQuestion` 훅만 실패 | gstack clone |
-| `~/.claude/hud/omc-hud-cache.sh` (statusLine) | 스테이터스라인이 빈 줄 | `omc setup` |
+| `~/.claude/hud/omc-hud-cache.sh` (statusLine) | 스테이터스라인이 빈 줄 | `./install.sh` (`claude` 한 번 실행 뒤) |
 
-`omc setup` 은 `claude` 를 한 번 띄워 OMC 플러그인이 깔린 뒤에 돈다. 그전까지는
-statusLine 이 비어 보이는 게 정상이다.
+HUD 스크립트는 OMC 마켓플레이스 클론(`~/.claude/plugins/marketplaces/omc/scripts/`)에
+들어 있고, `install.sh` 가 거기서 5개 파일을 `~/.claude/hud/` 로 **복사**한다.
+심링크가 아닌 이유는 플러그인 디렉터리가 업데이트 때 통째로 갈리기 때문이다.
+따라서 새 머신에서는 `claude` 를 한 번 띄워 플러그인이 깔린 **뒤에** `./install.sh`
+를 한 번 더 돌린다. 그전까지 statusLine 이 비어 보이는 건 정상이다.
+
+옵션과 원리는 `docs/hud.md` 에 따로 정리했다.
+
+`omc setup` 도 같은 일을 하지만 `install.sh` 로 하는 이유는 `--check` 가 감시해주고,
+외부 설치기를 돌리는 절차가 복원 순서에서 하나 빠지기 때문이다. (`omc setup` 이
+`CLAUDE.md` 를 파괴하지는 않는다 — 아래 참고.)
+
+### `omc setup` 이 실제로 하는 일
+
+가짜 `HOME` 으로 격리 실행해 확인했다. 플러그인이 이미 깔려 있고 statusLine 이
+설정돼 있으면, `~/.claude/settings.json` 에는 **의미 있는 변경이 없다** — 훅은
+플러그인이 제공하므로 건너뛰고, statusLine 은 `--force` 없이는 손대지 않는다.
+다만 JSON 을 다시 직렬화하므로 한 줄로 눌러쓴 곳이 펼쳐지고 끝 개행이 사라진다.
+우리 `settings.json` 은 심링크지만 Node 는 심링크를 따라 쓰므로, **저장소 파일이
+직접 고쳐진다** (링크는 유지된다). git diff 로 보이니 위험하진 않다.
+
+`~/.claude/CLAUDE.md` 는 `<!-- OMC:START -->` … `<!-- OMC:END -->` 센티넬 블록만
+갈아끼우고, 바깥의 내용은 `<!-- User customizations -->` 아래로 보존하며, 매번
+`CLAUDE.md.backup.<타임스탬프>` 를 남긴다. 우리 `.bashrc` 블록과 같은 방식이다.
 
 ## 함정
 

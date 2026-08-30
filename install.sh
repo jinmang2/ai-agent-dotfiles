@@ -120,6 +120,59 @@ else
   fi
 fi
 
+# ── ~/.claude/hud (statusLine) ───────────────────────────────────────────
+# settings.json 의 statusLine 이 ~/.claude/hud/ 의 스크립트를 부른다. 그 스크립트는
+# OMC 가 만들어 놓는 것이라 이 저장소에는 없다. 없으면 statusLine 명령이 stdout 에
+# 아무것도 못 내고, Claude 는 경고 없이 그냥 빈 줄을 그린다 — 알아채기 어렵다.
+#
+# 그래서 OMC 마켓플레이스 클론에서 직접 가져온다. `omc setup` 이 하는 일의 HUD
+# 부분만 떼어낸 것이다. omc setup 을 안 쓰는 이유는 --check 가 감시하지 못하고
+# 복원 절차가 하나 늘기 때문이지, omc setup 이 위험해서가 아니다 (README 참고).
+# 심링크가 아니라 복사인 이유: 플러그인 디렉터리는 업데이트 때 통째로 갈린다.
+#
+# 프로필을 나눠 써도 ~/.claude-team/hud 등은 여기로 심링크된다 (shell/agents.sh).
+HUD_SRC="$HOME/.claude/plugins/marketplaces/omc/scripts"
+HUD_DST="$HOME/.claude/hud"
+# 원본|설치이름|권한
+HUD_FILES=$(cat <<'LIST'
+find-node.sh|find-node.sh|755
+lib/config-dir.mjs|lib/config-dir.mjs|644
+lib/config-dir.sh|lib/config-dir.sh|644
+lib/hud-cache-wrapper.sh|omc-hud-cache.sh|755
+lib/hud-wrapper-template.txt|omc-hud.mjs|755
+LIST
+)
+
+if [ ! -d "$HUD_SRC" ]; then
+  printf '  건너뜀 ~/.claude/hud  (OMC 마켓플레이스가 아직 없음 — claude 실행 후 다시)\n'
+else
+  hud_total=0; hud_stale=0; hud_missing_src=0
+  while IFS='|' read -r hrel hname hmode; do
+    [ -n "$hrel" ] || continue
+    hud_total=$((hud_total+1))
+    [ -f "$HUD_SRC/$hrel" ] || { hud_missing_src=$((hud_missing_src+1)); continue; }
+    cmp -s "$HUD_SRC/$hrel" "$HUD_DST/$hname" || hud_stale=$((hud_stale+1))
+  done <<< "$HUD_FILES"
+
+  if [ "$hud_missing_src" -gt 0 ]; then
+    printf '  건너뜀 ~/.claude/hud  (OMC 쪽 원본 %d개 없음 — 버전이 바뀐 듯)\n' "$hud_missing_src"
+  elif [ "$hud_stale" -eq 0 ]; then
+    printf '  ok     ~/.claude/hud  (%d개)\n' "$hud_total"; ok=$((ok+1))
+  elif [ "$CHECK" = 1 ]; then
+    bad=$((bad+1))
+    printf '  갱신필요 ~/.claude/hud  (%d/%d개가 OMC 원본과 다름 → ./install.sh)\n' "$hud_stale" "$hud_total"
+  else
+    bad=$((bad+1))
+    mkdir -p "$HUD_DST/lib"
+    while IFS='|' read -r hrel hname hmode; do
+      [ -n "$hrel" ] || continue
+      cmp -s "$HUD_SRC/$hrel" "$HUD_DST/$hname" && continue
+      cp "$HUD_SRC/$hrel" "$HUD_DST/$hname" && chmod "$hmode" "$HUD_DST/$hname" || rc=1
+    done <<< "$HUD_FILES"
+    printf '  복사   ~/.claude/hud  (%d개 ← OMC 플러그인)\n' "$hud_stale"
+  fi
+fi
+
 # ── ~/.ssh/config ────────────────────────────────────────────────────────
 # 심링크하지 않는다. 600 권한이 필요하고, 도구들이 이 파일을 직접 고치기도 한다.
 # 없으면 비공개 서브모듈의 것을 복사하고, 이미 있으면 손대지 않고 차이만 보여준다.
@@ -207,6 +260,8 @@ cat <<'NEXT'
        claude 한 번 실행 → settings.json 의 enabledPlugins /
        extraKnownMarketplaces 를 보고 자동 설치됩니다.
        서브에이전트(inspector)도 ai-agent-dotfiles 플러그인으로 함께 들어옵니다.
+       깔린 뒤 ./install.sh 를 한 번 더 → ~/.claude/hud (스테이터스라인) 이
+       OMC 플러그인에서 채워집니다.
 
   2. gstack  (settings.json 의 AskUserQuestion 훅이 참조, 약 1.5G)
        git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
