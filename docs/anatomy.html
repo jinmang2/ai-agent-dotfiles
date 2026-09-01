@@ -1,0 +1,1041 @@
+<title>에이전트 도트파일 해부도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap">
+
+<style>
+  :root {
+    --ground:    #F4F7FA;
+    --surface:   #FFFFFF;
+    --sunken:    #EAEFF5;
+    --ink:       #131820;
+    --ink-soft:  #3D4756;
+    --muted:     #5E6A7A;
+    --rule:      #D8DFE8;
+    --rule-soft: #E7ECF2;
+
+    /* 의미색.  상태줄이 쓰는 tmux 256색을 본문에서 읽히는 밝기로 옮긴 것 —
+       진짜 색값은 아래 --tm-* 에 있고, 견본 안에서만 그대로 쓴다. */
+    --personal:  #35638F;   /* claude       · colour33  */
+    --team:      #6E4DA6;   /* claude-team  · colour135 */
+    --busy:      #9A6B1E;   /* » 작업중      · colour214 */
+    --alert:     #A33A32;   /* ? 입력대기 · 제외·위험    */
+    --done:      #256B4E;   /* ✓ 완료        · colour41  */
+
+    /* 견본은 두 테마에서 같은 모습을 유지한다 — 터미널은 터미널이다 */
+    --term-bg:   #10151C;
+    --term-fg:   #D3DCE6;
+    --term-dim:  #7A8798;
+    --term-rule: #263140;
+    --term-hi:   #7FB2E8;
+
+    /* tmux 가 실제로 그리는 색.  상태줄 견본에서만 쓴다 */
+    --tm-bg:     #1C1C1C;   /* colour234 */
+    --tm-fg:     #BCBCBC;   /* colour250 */
+    --tm-ink:    #262626;   /* colour235 · 색칠한 번호 위의 글자 */
+    --tm-33:     #0087FF;   /* claude       */
+    --tm-135:    #AF5FFF;   /* claude-team  */
+    --tm-208:    #FF8700;   /* codex        */
+    --tm-41:     #00D75F;   /* gemini · ✓   */
+    --tm-178:    #D7AF00;   /* copilot      */
+    --tm-160:    #D70000;   /* antigravity  */
+    --tm-214:    #FFAF00;   /* » 작업중      */
+    --tm-196:    #FF0000;   /* ? 입력대기    */
+    --tm-39:     #00AFFF;   /* 활성 창       */
+
+    --measure: 68ch;
+    --fs-body: 16.5px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #0C1015;
+      --surface:   #151A21;
+      --sunken:    #11161C;
+      --ink:       #E5EAF1;
+      --ink-soft:  #C2CBD7;
+      --muted:     #8A96A6;
+      --rule:      #262E39;
+      --rule-soft: #1D242D;
+
+      --personal:  #78ABE2;
+      --team:      #B195E4;
+      --busy:      #DCA84E;
+      --alert:     #E2796F;
+      --done:      #62B58E;
+
+      --term-rule: #2D3949;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:    #0C1015;
+    --surface:   #151A21;
+    --sunken:    #11161C;
+    --ink:       #E5EAF1;
+    --ink-soft:  #C2CBD7;
+    --muted:     #8A96A6;
+    --rule:      #262E39;
+    --rule-soft: #1D242D;
+
+    --personal:  #78ABE2;
+    --team:      #B195E4;
+    --busy:      #DCA84E;
+    --alert:     #E2796F;
+    --done:      #62B58E;
+
+    --term-rule: #2D3949;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans KR", system-ui, -apple-system, sans-serif;
+    font-size: var(--fs-body);
+    font-weight: 400;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 28px 120px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0 56px;
+  }
+
+  @media (min-width: 1040px) {
+    .wrap { grid-template-columns: 196px minmax(0, 1fr); }
+    .masthead { grid-column: 1 / -1; }
+  }
+
+  /* ── masthead ─────────────────────────────── */
+  .masthead {
+    padding: 72px 0 40px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 56px;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(34px, 5.4vw, 52px);
+    line-height: 1.14;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    max-width: var(--measure);
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--ink-soft);
+    margin: 0 0 30px;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .meta b { font-weight: 500; color: var(--ink-soft); }
+
+  /* ── section index ────────────────────────── */
+  nav.index {
+    display: none;
+    align-self: start;
+    position: sticky;
+    top: 32px;
+    padding-bottom: 40px;
+  }
+  @media (min-width: 1040px) { nav.index { display: block; } }
+  nav.index p {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  nav.index ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+  nav.index a {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 6px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: var(--muted);
+    text-decoration: none;
+    border-radius: 3px;
+  }
+  nav.index a span {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    padding-top: 2px;
+  }
+  nav.index a:hover { color: var(--personal); }
+  nav.index a:focus-visible { outline: 2px solid var(--personal); outline-offset: 3px; }
+
+  /* ── sections ─────────────────────────────── */
+  section { margin-bottom: 68px; scroll-margin-top: 24px; }
+  section > * { max-width: var(--measure); }
+  section > figure,
+  section > .term,
+  section > .statusbar,
+  section > .wide,
+  section > .tablewrap { max-width: none; }
+
+  h2 {
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    line-height: 1.3;
+    margin: 0 0 6px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: baseline;
+    text-wrap: balance;
+  }
+  h2 .num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--personal);
+    letter-spacing: 0.04em;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0 0 26px;
+    padding-left: 40px;
+    border-left: 1px solid var(--rule);
+  }
+
+  h3 {
+    font-size: 16.5px;
+    font-weight: 600;
+    margin: 34px 0 10px;
+    letter-spacing: -0.004em;
+  }
+  p { margin: 0 0 16px; }
+  strong { font-weight: 600; }
+  a { color: var(--personal); }
+
+  ul, ol.body { padding-left: 20px; margin: 0 0 18px; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.875em;
+    background: var(--sunken);
+    border: 1px solid var(--rule-soft);
+    border-radius: 3px;
+    padding: 0.1em 0.36em;
+    word-break: break-word;
+  }
+
+  /* ── terminal specimen ────────────────────── */
+  .term {
+    background: var(--term-bg);
+    color: var(--term-fg);
+    border: 1px solid var(--term-rule);
+    border-radius: 6px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13.5px;
+    line-height: 1.85;
+    padding: 20px 22px;
+    margin: 0 0 22px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .term .c  { color: var(--term-dim); }
+  .term .hi { color: var(--term-hi); }
+  .term code { background: none; border: none; padding: 0; font-size: inherit; color: inherit; }
+
+  /* ── tmux 상태줄 견본 ─────────────────────── */
+  .statusbar {
+    background: var(--tm-bg);
+    color: var(--tm-fg);
+    border: 1px solid var(--term-rule);
+    border-radius: 6px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 14px;
+    line-height: 2.1;
+    padding: 18px 20px;
+    margin: 0 0 22px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .statusbar .sess { background: var(--tm-39); color: var(--tm-ink); font-weight: 600; }
+  .statusbar .cur  { background: var(--tm-39); color: var(--tm-ink); font-weight: 600; }
+  .statusbar .n33  { background: var(--tm-33);  color: var(--tm-ink); }
+  .statusbar .n135 { background: var(--tm-135); color: var(--tm-ink); }
+  .statusbar .n208 { background: var(--tm-208); color: var(--tm-ink); }
+  .statusbar .n41  { background: var(--tm-41);  color: var(--tm-ink); }
+  .statusbar .sbusy { color: var(--tm-214); }
+  .statusbar .swait { color: var(--tm-196); }
+  .statusbar .sdone { color: var(--tm-41); }
+  .statusbar .c    { color: var(--term-dim); }
+
+  /* 프로필 색 견본 칩 — 진짜 tmux 색을 어두운 바탕에서만 보여준다 */
+  .sw {
+    display: inline-block;
+    min-width: 2.4em;
+    text-align: center;
+    border-radius: 3px;
+    padding: 0.05em 0.4em;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--tm-ink);
+  }
+  .sw33 { background: var(--tm-33); }
+  .sw135 { background: var(--tm-135); }
+  .sw208 { background: var(--tm-208); }
+  .sw41 { background: var(--tm-41); }
+  .sw178 { background: var(--tm-178); }
+  .sw160 { background: var(--tm-160); }
+
+  .caption {
+    font-size: 13px;
+    color: var(--muted);
+    margin: -12px 0 24px;
+    max-width: var(--measure);
+  }
+
+  /* ── figures ──────────────────────────────── */
+  figure {
+    margin: 30px 0 30px;
+    padding: 26px 24px 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 7px;
+    overflow-x: auto;
+  }
+  figure svg { display: block; max-width: 100%; height: auto; margin: 0 auto; color: var(--ink-soft); }
+
+  /* SVG 의미색 — 반드시 토큰 경유 (두 테마 모두에서 대비 유지) */
+  figure svg .t-p { fill: var(--personal); }
+  figure svg .t-t { fill: var(--team); }
+  figure svg .t-b { fill: var(--busy); }
+  figure svg .t-d { fill: var(--done); }
+  figure svg .t-a { fill: var(--alert); }
+  figure svg .s-p { stroke: var(--personal); }
+  figure svg .s-t { stroke: var(--team); }
+  figure svg .s-b { stroke: var(--busy); }
+  figure svg .s-d { stroke: var(--done); }
+  figure svg .s-a { stroke: var(--alert); }
+  figure svg .mk-p path { fill: var(--personal); }
+  figure svg .mk-t path { fill: var(--team); }
+  figure svg .mk-b path { fill: var(--busy); }
+  figure svg .mk-d path { fill: var(--done); }
+  figure svg .mk-a path { fill: var(--alert); }
+  figcaption {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule-soft);
+    text-wrap: balance;
+  }
+
+  /* ── tables ───────────────────────────────── */
+  .tablewrap { overflow-x: auto; margin: 0 0 24px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14.5px;
+    min-width: 460px;
+  }
+  th, td {
+    text-align: left;
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 8px;
+  }
+  td code { font-size: 13px; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ── callout ──────────────────────────────── */
+  .note {
+    border-left: 2px solid var(--rule);
+    padding: 2px 0 2px 20px;
+    margin: 0 0 22px;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+  .note.warn { border-left-color: var(--busy); }
+  .note.bad  { border-left-color: var(--alert); }
+  .note.good { border-left-color: var(--done); }
+  .note b { color: var(--ink); }
+  .note :last-child { margin-bottom: 0; }
+
+  /* ── status legend chips ──────────────────── */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 24px; padding: 0; list-style: none; }
+  .chips li {
+    display: flex; align-items: baseline; gap: 8px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 5px 14px;
+    margin: 0;
+    background: var(--surface);
+  }
+  .chips li i { font-style: normal; font-size: 14px; font-weight: 600; }
+  .chips li i.b { color: var(--busy); }
+  .chips li i.w { color: var(--alert); }
+  .chips li i.d { color: var(--done); }
+  .chips li em { font-style: normal; color: var(--muted); font-family: "IBM Plex Sans KR", sans-serif; }
+
+  footer {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--rule);
+    padding-top: 24px;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">jinmang2/ai-agent-dotfiles · Claude Code 2.1.251</p>
+    <h1>에이전트 도트파일 해부도</h1>
+    <p class="standfirst">tmux 창 이름이 어떻게 결정되고 누가 그것을 소유하는지, 훅이 언제 왜 도는지, 계정 두 개가 어떻게 격리되면서도 2.2G를 나눠 쓰는지, 그리고 저장소에 무엇을 담고 무엇을 왜 뺐는지.</p>
+    <div class="meta">
+      <span><b>추적 파일</b> 33개</span>
+      <span><b>훅</b> 8개 · <b>플러그인</b> 6개</span>
+      <span><b>공유</b> skills 1.5G · plugins 678M</span>
+      <span><b>도구</b> Claude · Codex · Gemini · tmux · 셸</span>
+    </div>
+  </header>
+
+  <nav class="index">
+    <p>목차</p>
+    <ol>
+      <li><a href="#s1"><span>§1</span>한 벌과 설치 위치</a></li>
+      <li><a href="#s2"><span>§2</span>settings.json</a></li>
+      <li><a href="#s3"><span>§3</span>훅 8개</a></li>
+      <li><a href="#s4"><span>§4</span>이름과 상태를 가르다</a></li>
+      <li><a href="#s5"><span>§5</span>주인이 둘이다</a></li>
+      <li><a href="#s6"><span>§6</span>프로필 색</a></li>
+      <li><a href="#s7"><span>§7</span>다중 계정</a></li>
+      <li><a href="#s8"><span>§8</span>직접 확인한 것</a></li>
+      <li><a href="#s9"><span>§9</span>함정</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- ══════════════ 1 ══════════════ -->
+    <section id="s1">
+      <h2><span class="num">§1</span>한 벌과 설치 위치</h2>
+      <p class="lede">실체는 저장소에 한 벌. 나머지는 전부 심링크다. 그래서 설치 위치에서 고쳐도 곧바로 저장소의 변경으로 잡힌다.</p>
+
+      <p>같은 파일을 여러 번 복사하지 않습니다. 설치란 <strong>저장소의 파일을 각 도구가 찾는 자리에 링크로 걸어두는 일</strong>이고, <code>install.sh</code> 가 하는 게 정확히 그것입니다. 몇 번 돌려도 결과가 같고(멱등), 그 자리에 실제 파일이 있으면 지우지 않고 <code>.pre-install-&lt;타임스탬프&gt;</code> 로 옮겨둔 뒤 링크합니다.</p>
+
+      <p>눈여겨볼 지점은 <strong>공용 항목이 <code>~/.claude/</code> 밖에 있다</strong>는 것입니다. 창 이름 스크립트 하나를 Claude Code 와 Codex 가 같이 쓰기 때문에, 어느 한 도구의 설정 디렉토리에 두면 다른 도구가 남의 집을 참조하게 됩니다. 그래서 도구 무관한 것은 <code>~/.local/bin</code> 과 <code>~/.config</code> 로 갔습니다.</p>
+
+      <figure>
+        <svg viewBox="0 0 840 428" role="img" aria-label="저장소 한 벌이 여러 설치 위치로 심링크되는 관계. 공개 저장소와 비공개 서브모듈이 왼쪽에 있고, 오른쪽에는 도구 무관 위치, Claude Code 설정, 두 번째 계정이 있다.">
+          <defs>
+            <marker id="ar-p" class="mk-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+            <marker id="ar-t" class="mk-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+            <marker id="ar-a" class="mk-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+          </defs>
+
+          <!-- 저장소 (공개) -->
+          <text x="16" y="26" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity="0.65" letter-spacing="1.2">GIT · 공개</text>
+          <text x="16" y="44" font-family="IBM Plex Mono, monospace" font-size="12.5" font-weight="500" class="t-p">~/ai-agent-dotfiles</text>
+          <rect x="16" y="56" width="252" height="212" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
+          <text x="34" y="82"  font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">agent/     창 이름 한 벌</text>
+          <text x="34" y="104" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">claude/    settings.json</text>
+          <text x="34" y="126" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">codex/     템플릿·훅</text>
+          <text x="34" y="148" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">gemini/  tmux/  shell/</text>
+          <text x="34" y="170" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">plugins/   마켓플레이스</text>
+          <line x1="34" y1="186" x2="250" y2="186" stroke="currentColor" stroke-width="1" opacity="0.25"/>
+          <text x="34" y="210" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity="0.7">install.sh  scripts/</text>
+          <text x="34" y="232" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity="0.7">docs/  README.md</text>
+          <text x="34" y="256" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.6">실체 · 추적 파일 33개</text>
+
+          <!-- local (비공개) -->
+          <text x="16" y="300" font-family="IBM Plex Mono, monospace" font-size="10.5" class="t-a" letter-spacing="1.2">GIT · 비공개 서브모듈</text>
+          <rect x="16" y="312" width="252" height="86" rx="6" fill="none" class="s-a" stroke-width="1.5" opacity="0.75"/>
+          <text x="34" y="338" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">local/ssh-config</text>
+          <text x="34" y="360" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">local/hosts/&lt;호스트&gt;/</text>
+          <text x="34" y="382" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" class="t-a">머신 고유 값만</text>
+
+          <!-- 도구 무관 -->
+          <text x="470" y="26" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity="0.65" letter-spacing="1.2">도구 무관 · 공용</text>
+          <rect x="470" y="36" width="354" height="106" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
+          <text x="488" y="62"  font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.local/bin/agent-window-label</text>
+          <text x="488" y="84"  font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.config/agent-profiles.conf</text>
+          <text x="488" y="106" font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.config/agent-dotfiles/*.sh</text>
+          <text x="488" y="128" font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.tmux.conf   ~/.gemini/GEMINI.md</text>
+
+          <!-- Claude -->
+          <text x="470" y="176" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity="0.65" letter-spacing="1.2">CLAUDE CODE · 개인 계정</text>
+          <rect x="470" y="186" width="354" height="108" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
+          <text x="488" y="212" font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.claude/settings.json</text>
+          <text x="488" y="232" font-family="IBM Plex Sans KR, sans-serif" font-size="11" fill="currentColor" opacity="0.7">심링크 — 단, 오버레이가 있으면 병합 생성물 (§2)</text>
+          <line x1="488" y1="246" x2="806" y2="246" stroke="currentColor" stroke-width="1" opacity="0.25"/>
+          <text x="488" y="268" font-family="IBM Plex Mono, monospace" font-size="12" class="t-a">.credentials.json  projects/  history.jsonl</text>
+          <text x="488" y="286" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" class="t-a">계정마다 따로 · 저장소에 없음</text>
+
+          <!-- team -->
+          <text x="470" y="328" font-family="IBM Plex Mono, monospace" font-size="10.5" class="t-t" letter-spacing="1.2">두 번째 계정</text>
+          <rect x="470" y="338" width="354" height="72" rx="6" fill="none" class="s-t" stroke-width="1.5" opacity="0.75"/>
+          <text x="488" y="364" font-family="IBM Plex Mono, monospace" font-size="12" class="t-t">~/.claude-team/{settings,skills,plugins,…}</text>
+          <text x="488" y="386" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.7">→ ~/.claude 를 자식 단위로 심링크 (§7)</text>
+
+          <!-- arrows -->
+          <line x1="274" y1="100" x2="464" y2="86"  class="s-p" stroke-width="1.6" marker-end="url(#ar-p)"/>
+          <line x1="274" y1="150" x2="464" y2="228" class="s-p" stroke-width="1.6" marker-end="url(#ar-p)"/>
+          <line x1="274" y1="352" x2="464" y2="238" class="s-a" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ar-a)"/>
+          <path d="M 700 300 C 700 316 700 322 700 332" class="s-t" stroke-width="1.6" fill="none" marker-end="url(#ar-t)"/>
+
+          <text x="368" y="82"  text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="11" class="t-p">심링크</text>
+          <text x="356" y="200" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="11" class="t-a">오버레이 병합</text>
+        </svg>
+        <figcaption>화살표는 “무엇이 무엇을 가리키는가”가 아니라 <strong>설치 방향</strong>입니다. 파란 실선은 심링크, 빨간 점선은 병합 생성. 빨간 항목 — 자격증명과 대화 기록 — 은 계정마다 따로이며 저장소에 올라가지 않습니다.</figcaption>
+      </figure>
+
+      <div class="note">
+        <p><b>핵심 판단</b> — <code>~/.claude</code> 자체에는 git 리모트를 걸지 않습니다. 자격증명과 대화 기록 전문이 같은 디렉토리에 살기 때문에, 화이트리스트 <code>.gitignore</code> 규칙 하나만 어긋나도 그대로 유출됩니다. 별도 디렉토리에 실체를 두면 그 위험이 <strong>구조적으로</strong> 사라집니다 — 실수할 여지 자체가 없어집니다.</p>
+      </div>
+
+      <h3>세 개의 서랍</h3>
+      <p>설정을 셋 중 하나로 분류합니다. 헷갈리면 <em>“새 머신에서 이 값이 그대로 맞나?”</em> 를 묻습니다.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>서랍</th><th>두는 곳</th><th>예</th></tr></thead>
+          <tbody>
+            <tr><td>공개해도 되는 공용 메커니즘</td><td>이 저장소</td><td>훅, <code>window-label.sh</code>, tmux, 공용 권한 규칙</td></tr>
+            <tr><td>머신 고유 값</td><td><code>local/hosts/&lt;호스트&gt;/</code> — 비공개 서브모듈</td><td>절대경로가 든 권한, tailnet 별칭</td></tr>
+            <tr><td>재설치로 복원되는 것</td><td>아무 데도 안 둔다</td><td>플러그인 본체, skills, OMC 생성물</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="caption">이 저장소가 작은 이유가 세 번째 줄입니다. 프레임워크는 계속 쓰되, <strong>재설치로 복원되는 것과 내가 만든 것을 섞지 않습니다.</strong></p>
+    </section>
+
+    <!-- ══════════════ 2 ══════════════ -->
+    <section id="s2">
+      <h2><span class="num">§2</span>settings.json</h2>
+      <p class="lede">148행. 훅 8개, 플러그인 6개, 권한 18줄, 스테이터스라인 1개. 경로 하드코딩 0곳.</p>
+
+      <h3>이식성 — <code>"$HOME"</code></h3>
+      <p>처음엔 홈 절대경로가 여덟 곳에 박혀 있었습니다. 다른 머신에 그대로 가져가면 훅이 전부 죽는 상태였습니다. 훅 커맨드가 셸을 거쳐 실행되는지 실제로 프로브를 걸어 확인한 결과 <strong><code>$HOME</code> 이 확장됩니다.</strong> 그래서 설치 시점 경로 치환(sed) 같은 장치 없이 전부 이렇게 바뀌었습니다.</p>
+
+      <div class="term"><span class="c"># JSON 문자열 안이라 큰따옴표가 이스케이프됨</span>
+"command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy"</div>
+      <p class="caption">스테이터스라인만 예외적으로 <code>${CLAUDE_CONFIG_DIR:-$HOME/.claude}</code> 를 씁니다 — 계정마다 다른 HUD 캐시를 읽어야 하기 때문입니다.</p>
+
+      <h3>키별 역할</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>키</th><th>값</th><th>역할</th></tr></thead>
+          <tbody>
+            <tr><td><code>env</code></td><td><code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code></td><td>에이전트 팀 기능. 바이너리에 실재하는 변수임을 확인함</td></tr>
+            <tr><td><code>model</code></td><td><code>opus[1m]</code></td><td>Opus + 1M 컨텍스트. <code>[1m]</code> 은 실제 접미사 문법</td></tr>
+            <tr><td><code>effortLevel</code></td><td><code>high</code></td><td>추론 강도</td></tr>
+            <tr><td><code>permissions.allow</code></td><td>18줄</td><td>읽기 전용 조회만 (<code>git status</code>, <code>gh pr view</code>, <code>df -h</code> …). 쓰는 명령은 한 줄도 없다</td></tr>
+            <tr><td><code>hooks</code></td><td>6개 이벤트 · 훅 8개</td><td>§3</td></tr>
+            <tr><td><code>statusLine</code></td><td><code>omc-hud-cache.sh</code></td><td>OMC HUD — 사용량·모델·컨텍스트</td></tr>
+            <tr><td><code>enabledPlugins</code></td><td>6개</td><td>새 머신에서 <em>자동 설치됨</em></td></tr>
+            <tr><td><code>extraKnownMarketplaces</code></td><td>4곳</td><td>위 플러그인의 출처 등록</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>설정 파일이 하나뿐이라는 제약</h3>
+      <p>Claude Code 가 읽는 user 스코프 설정 파일은 <strong><code>~/.claude/settings.json</code> 하나뿐입니다.</strong> <code>~/.claude/settings.local.json</code> 은 <em>만들어도 조용히 무시됩니다</em> — <code>.local.json</code> 은 프로젝트 스코프에만 존재합니다. 그래서 “공용은 저장소, 이 머신만은 로컬 파일” 식으로 <strong>파일을 나눌 수가 없습니다.</strong></p>
+      <p>대신 설치 시점에 합칩니다.</p>
+
+      <div class="term">claude/settings.json                            <span class="c">공용 (이 저장소)</span>
+  <span class="hi">+</span> local/hosts/&lt;호스트&gt;/settings-overlay.json    <span class="c">이 머신만 (비공개)</span>
+  <span class="hi">=</span> ~/.claude/settings.json                      <span class="c">병합 생성물</span></div>
+
+      <p>오버레이가 없는 머신에서는 그냥 심링크입니다. 있으면 <code>scripts/merge-settings.py</code> 가 합친 <strong>실제 파일</strong>이 됩니다 — 병합 규칙에는 테스트 28개가 붙어 있습니다.</p>
+
+      <div class="note warn">
+        <p><b>이 머신은 지금 후자입니다.</b> <code>~/.claude/settings.json</code> 은 심링크가 아니라 6,922바이트짜리 실제 파일입니다. 즉 <strong>생성물이므로 거기서 직접 고치면 다음 <code>./install.sh</code> 에 덮어쓰입니다.</strong> 공용이면 <code>claude/settings.json</code>, 이 머신만이면 오버레이를 고칩니다. Claude Code 가 “Yes, and don’t ask again” 으로 거기에 직접 쓰는 일도 있어서, <code>--check</code> 와 설치 시점에 <strong>무엇이 사라지는지 diff 로 먼저 보여줍니다.</strong></p>
+      </div>
+
+      <div class="note good">
+        <p><b>심링크는 쓰기를 통과시킵니다.</b> 오버레이가 없어 심링크인 머신에서는, Claude Code 나 <code>omc setup</code> 이 <code>~/.claude/settings.json</code> 에 써도 링크가 끊기지 않고 <strong>저장소 파일이 직접 고쳐집니다</strong>. Node 가 심링크를 따라 쓰기 때문입니다. <code>model</code> 이 세션 도중 <code>opus</code> → <code>opus[1m]</code> 로 바뀐 것이 저장소까지 그대로 반영된 것으로 확인했습니다. 다만 <em>모든</em> 쓰기 경로가 그런 것은 아닙니다 — §9.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════ 3 ══════════════ -->
+    <section id="s3">
+      <h2><span class="num">§3</span>훅 8개</h2>
+      <p class="lede">상태 세 개와, 그 사이를 옮기는 이벤트 네 개. 그리고 “질문에 답했다” 는 이벤트가 없다는 사실을 우회하는 법.</p>
+
+      <ul class="chips">
+        <li><i class="b">»</i> <code>busy</code> <em>작업중</em></li>
+        <li><i class="w">?</i> <code>waiting</code> <em>입력대기</em></li>
+        <li><i class="d">✓</i> <code>done</code> <em>완료</em></li>
+      </ul>
+
+      <p>상태는 tmux 윈도우 옵션 <code>@cc</code> 에 저장됩니다. 상태줄의 기호는 그 값을 보여주는 것뿐이고, <strong>진실은 <code>@cc</code> 에 있습니다.</strong> 스크립트가 조기 탈출을 판단할 때도, 셸이 청소할 때도 이 값을 봅니다.</p>
+
+      <h3>입력대기가 안 풀리던 문제</h3>
+      <p>원래 설정에는 <code>Notification</code>(입력대기)은 있는데 그걸 되돌리는 이벤트가 없었습니다. 권한 프롬프트에 답해도 창은 그 턴이 끝날 때까지 물음표로 남아 있었습니다.</p>
+      <p>Claude Code 에는 <strong>“질문에 답했다” 는 훅 이벤트가 존재하지 않습니다.</strong> 대신 답변 직후엔 반드시 도구가 실행된다는 점을 이용했습니다 — <code>PostToolUse</code> 를 “작업 재개” 신호로 쓰면 됩니다.</p>
+
+      <figure>
+        <svg viewBox="0 0 720 356" role="img" aria-label="창 상태 기계. UserPromptSubmit 이 작업중으로 진입시키고, Notification 이 입력대기로, PostToolUse 가 다시 작업중으로 되돌리며, Stop 이 완료로 끝낸다.">
+          <defs>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+            </marker>
+            <marker id="a2-fix" class="mk-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+            <marker id="a2-w" class="mk-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+            <marker id="a2-d" class="mk-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+          </defs>
+
+          <line x1="240" y1="18" x2="240" y2="58" stroke="currentColor" stroke-width="1.5" marker-end="url(#a2)"/>
+          <text x="254" y="42" font-family="IBM Plex Sans KR, sans-serif" font-size="12" fill="currentColor">UserPromptSubmit</text>
+
+          <circle cx="240" cy="110" r="50" fill="none" class="s-b" stroke-width="1.8"/>
+          <text x="240" y="106" text-anchor="middle" font-size="21" font-weight="600" class="t-b">»</text>
+          <text x="240" y="130" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" class="t-b">busy</text>
+
+          <circle cx="520" cy="110" r="50" fill="none" class="s-a" stroke-width="1.8"/>
+          <text x="520" y="106" text-anchor="middle" font-size="21" font-weight="600" class="t-a">?</text>
+          <text x="520" y="130" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" class="t-a">waiting</text>
+
+          <circle cx="240" cy="286" r="46" fill="none" class="s-d" stroke-width="1.8"/>
+          <text x="240" y="282" text-anchor="middle" font-size="19" font-weight="600" class="t-d">✓</text>
+          <text x="240" y="304" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" class="t-d">done</text>
+
+          <path d="M 285 86 C 340 56 420 56 475 86" fill="none" class="s-a" stroke-width="1.6" marker-end="url(#a2-w)"/>
+          <text x="380" y="52" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="12" class="t-a">Notification</text>
+          <text x="380" y="68" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="10.5" class="t-a" opacity="0.85">권한 요청 · 질문</text>
+
+          <path d="M 475 134 C 420 166 340 166 285 134" fill="none" class="s-p" stroke-width="2.2" marker-end="url(#a2-fix)"/>
+          <text x="380" y="186" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="12" font-weight="500" class="t-p">PostToolUse</text>
+          <text x="380" y="202" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="10.5" class="t-p">답변 직후 도구 실행 → 복구</text>
+
+          <path d="M 196 88 C 130 62 130 158 196 132" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#a2)" opacity="0.75"/>
+          <text x="118" y="104" text-anchor="end" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.8">PostToolUse 반복</text>
+          <text x="118" y="120" text-anchor="end" font-family="IBM Plex Sans KR, sans-serif" font-size="10.5" fill="currentColor" opacity="0.6">같은 상태 → 조기 탈출 12ms</text>
+
+          <line x1="240" y1="162" x2="240" y2="238" class="s-d" stroke-width="1.6" marker-end="url(#a2-d)"/>
+          <text x="254" y="206" font-family="IBM Plex Sans KR, sans-serif" font-size="12" class="t-d">Stop</text>
+
+          <text x="600" y="286" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.65">이 기계에는 “창을 떠났다”</text>
+          <text x="600" y="304" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.65">가는 길이 없다 — §5</text>
+        </svg>
+        <figcaption>굵은 파란 화살표가 복구 경로입니다. 점선 자기 루프는 도구가 연달아 실행될 때인데, 상태가 이미 <code>busy</code> 이므로 <code>tmux show</code> 한 번만 하고 즉시 빠져나옵니다.</figcaption>
+      </figure>
+
+      <h3>등록된 훅 8개</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>이벤트</th><th>매처</th><th>훅</th><th class="num">async</th></tr></thead>
+          <tbody>
+            <tr><td><code>PreToolUse</code></td><td>AskUserQuestion</td><td>gstack question-preference</td><td class="num">아니오</td></tr>
+            <tr><td><code>PostToolUse</code></td><td>AskUserQuestion</td><td>gstack question-log</td><td class="num">아니오</td></tr>
+            <tr><td><code>PostToolUse</code></td><td>AskUserQuestion</td><td>gstack auq-error-fallback</td><td class="num">아니오</td></tr>
+            <tr><td><code>PostToolUse</code></td><td>전체</td><td><code>agent-window-label » busy</code></td><td class="num">예</td></tr>
+            <tr><td><code>PostToolUseFailure</code></td><td>전체</td><td><code>agent-window-label » busy</code></td><td class="num">예</td></tr>
+            <tr><td><code>UserPromptSubmit</code></td><td>전체</td><td><code>agent-window-label » busy</code></td><td class="num">예</td></tr>
+            <tr><td><code>Notification</code></td><td>전체</td><td><code>agent-window-label ? waiting</code></td><td class="num">예</td></tr>
+            <tr><td><code>Stop</code></td><td>전체</td><td><code>agent-window-label ✓ done</code></td><td class="num">예</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>gstack 훅 3개만 <strong>동기</strong>입니다 — 이들은 <code>permissionDecision</code> 을 반환해 Claude Code 의 진행을 실제로 통제하므로 결과를 기다려야 합니다. 창 이름 훅 5개는 순수 표시이므로 전부 <code>async: true</code> 이고 턴을 막지 않습니다.</p>
+
+      <div class="note">
+        <p>도구 <em>실패</em>도 <code>PostToolUseFailure</code> 로 똑같이 <code>busy</code> 로 되돌립니다. 도구가 실패해도 작업은 계속되기 때문입니다 — 실패했다고 창이 입력대기나 완료에 멈춰 있으면 그게 거짓말이 됩니다.</p>
+      </div>
+
+      <div class="note">
+        <p><b>Codex 도 같은 스크립트를 부릅니다.</b> 두 도구의 훅 JSON 형식이 같아서, <code>~/.codex/hooks.json</code> 이 <code>agent-window-label</code> 을 그대로 호출합니다. 그래서 이 스크립트가 <code>~/.claude/</code> 밖에 있는 것입니다(§1).</p>
+      </div>
+    </section>
+
+    <!-- ══════════════ 4 ══════════════ -->
+    <section id="s4">
+      <h2><span class="num">§4</span>이름과 상태를 가르다</h2>
+      <p class="lede">예전엔 창 이름에 이모지를 박았다. 좁은 상태줄에서 이모지가 먼저 살아남고 정작 라벨이 3자로 잘렸다. 그래서 표시를 둘로 나눴다.</p>
+
+      <p>창 이름 하나에 세 가지를 욱여넣고 있었습니다 — 상태 이모지, 계정 마커, 라벨. tmux 상태줄은 폭이 정해져 있어서 이름을 잘라 보여주는데, <strong>잘리는 쪽은 언제나 뒤, 즉 라벨입니다.</strong> 이모지 두 개는 표시 폭 4칸을 먹으면서 절대 잘리지 않았습니다. 정보량이 가장 큰 것이 가장 먼저 사라지는 구조였습니다.</p>
+
+      <p>고친 방식은 <strong>이름에서 정보를 빼는 것</strong>이었습니다. 이름은 라벨만 담고, 상태와 프로필은 창 <em>옵션</em>으로 남깁니다. 옵션은 폭을 먹지 않습니다. 그걸 상태줄 포맷이 읽어서 그립니다.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>어디에</th><th>무엇</th><th>누가 쓰나</th></tr></thead>
+          <tbody>
+            <tr><td>창 이름</td><td>라벨만</td><td><code>choose-tree</code> 등 어디서든 이름은 이름이다</td></tr>
+            <tr><td><code>@cc</code></td><td>상태 문자열 <code>busy/waiting/done</code></td><td>존재 자체가 “이 창에 에이전트가 있다”</td></tr>
+            <tr><td><code>@cc_sym</code></td><td>1칸 기호 + 색</td><td>상태줄</td></tr>
+            <tr><td><code>@cc_color</code></td><td>창 번호에 입힐 프로필 색</td><td>상태줄. <strong>0칸짜리 마커다</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="caption">이 옵션 이름 한 벌이 <strong>세 파일의 계약</strong>입니다 — <code>agent/window-label.sh</code>(쓴다), <code>tmux/tmux.conf</code>(그린다), <code>shell/agents.sh</code>(지운다). 한 곳만 고치면 조용히 어긋납니다.</p>
+
+      <h3>칸 계산</h3>
+      <p>어림짐작이 아니라 세어서 정했습니다. 폭 76 기준으로 세션명 5칸과 시계 7칸을 빼면 창 목록에 64칸이 남습니다. 창당 고정비는 4칸(양옆 공백 2 + 번호 1 + 기호 1)입니다.</p>
+
+      <div class="statusbar"><span class="sess"> dev </span>  <span class="n33">1</span><span class="sbusy">»</span>myrepo  <span class="n135">2</span><span class="swait">?</span>client  <span class="n208">3</span><span class="sdone">✓</span>api-se  <span class="cur"> 4 ai-agent-dotfiles </span>          <span class="c">22:31</span>
+<span class="c">  └세션  └번호색=프로필  └기호=상태  └라벨 6자        └활성 창은 17자</span></div>
+      <p class="caption">번호 배경색이 어느 도구·계정인지를 말합니다 — <span class="sw sw33">33</span> claude, <span class="sw sw135">135</span> claude-team, <span class="sw sw208">208</span> codex. 기호는 상태입니다. 콜론을 뺀 것도 창당 1칸씩 벌기 위해서입니다.</p>
+
+      <p>결과적으로 <strong>같은 자리에서 라벨이 3자에서 6자로 늘었습니다.</strong> 비활성 창은 <code>#{=6:window_name}</code>, 지금 있는 창은 <code>#{=17:window_name}</code> 로 잘립니다 — 지금 있는 창은 이름을 온전히 알아야 하니까요.</p>
+
+      <div class="note">
+        <p><code>setw -g automatic-rename off</code> 가 없으면 tmux 가 실행 중인 프로세스 이름으로 창 이름을 계속 덮어씁니다. <strong>tmux 설정과 훅과 셸은 이 지점에서 결합돼 있습니다.</strong></p>
+      </div>
+
+      <h3>라벨 우선순위</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th class="num">순위</th><th>출처</th><th>결과 예</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td><code>@cc_label</code> — 손수 고정한 작업명</td><td><code>결제-마이그레이션</code></td></tr>
+            <tr><td class="num">2</td><td>git 저장소 루트 이름</td><td><code>ai-agent-dotfiles</code></td></tr>
+            <tr><td class="num">3</td><td>홈 디렉토리</td><td><code>~</code></td></tr>
+            <tr><td class="num">4</td><td>디렉토리 basename</td><td><code>lib</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>24자를 넘으면 <code>…</code> 로 자릅니다(<code>AGENT_LABEL_MAXLEN</code>). <strong>git 브랜치는 일부러 뺐습니다</strong> — 수시로 바뀌어서 창을 식별하는 데 도움이 안 되고, worktree 를 쓰면 디렉토리 이름에 이미 브랜치가 반영됩니다.</p>
+
+      <h3>cwd 를 어디서 읽는가</h3>
+      <p>원래는 tmux 의 <code>#{b:pane_current_path}</code> 를 썼습니다. 그런데 그건 <strong>셸의</strong> cwd 라서, Claude 세션이 다른 디렉토리로 옮겨가도 따라가지 않습니다. 지금은 훅이 stdin 으로 받는 JSON 에서 <code>cwd</code> 를 꺼내 씁니다 — 이게 세션의 실제 작업 디렉토리입니다.</p>
+
+      <div class="term"><span class="c"># stdin JSON 에서 cwd 추출 (jq 없이 sed 로 — jq 미설치 환경 대비)</span>
+cwd=$(printf '%s' "$payload" \
+  | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)</div>
+      <p class="caption">JSON 이 비어 있으면 tmux 값으로, 그것도 없으면 <code>$PWD</code> 로 단계적으로 물러납니다. 어느 단계에서 실패해도 훅은 <code>exit 0</code> 입니다 — 창 이름 때문에 에이전트가 멈추면 안 됩니다.</p>
+
+      <h3>작업명 고정</h3>
+      <p>Claude Code 안에서 <code>!</code> 접두사로 실행합니다 — 그래야 <code>PWD</code> 가 세션의 cwd 와 같습니다. 그 pane 에서 에이전트가 돌고 있으면 셸에 직접 입력할 수 없기도 합니다.</p>
+      <div class="term">$ <span class="hi">!ccname 결제-마이그레이션</span>
+결제-마이그레이션
+
+$ <span class="hi">!ccname --clear</span>
+ai-agent-dotfiles          <span class="c">← 자동으로 복귀</span></div>
+      <p class="caption">작업명은 <code>@cc_label</code> 에 저장되므로 훅이 덮어쓰지 않습니다. 상태 기호와 색만 계속 바뀝니다.</p>
+    </section>
+
+    <!-- ══════════════ 5 ══════════════ -->
+    <section id="s5">
+      <h2><span class="num">§5</span>주인이 둘이다</h2>
+      <p class="lede">에이전트가 창을 떠났다는 이벤트는 없다. 그래서 “셸이 프롬프트를 그렸다” 를 그 신호로 쓴다.</p>
+
+      <p>§3의 상태 기계에는 빠져나가는 길이 없습니다. <code>Stop</code> 훅은 <em>턴이 끝났을 때</em> 불릴 뿐이고, 에이전트를 강제 종료하면 <strong>아무 훅도 불리지 않습니다.</strong> 예전엔 종료한 뒤에도 완료 표시가 그대로 굳어 있었습니다 — 창은 “다 됐다” 고 말하는데 실은 아무도 없는 상태입니다.</p>
+
+      <p>해결은 다른 쪽에서 나왔습니다. <strong>셸 프롬프트는 그 창에 전경 프로그램이 없을 때만 그려집니다.</strong> 그건 정확히 “에이전트가 없다” 와 같은 뜻입니다. 그래서 <code>PROMPT_COMMAND</code> 에 정리 함수를 답니다.</p>
+
+      <figure>
+        <svg viewBox="0 0 760 300" role="img" aria-label="창 이름의 소유권 교대. 에이전트가 창을 점유하면 훅이 이름과 상태 옵션을 쥐고, 셸로 돌아오면 프롬프트가 이름을 쥐면서 상태 옵션을 지운다.">
+          <defs>
+            <marker id="a5" class="mk-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+            <marker id="a5d" class="mk-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z"/>
+            </marker>
+          </defs>
+
+          <rect x="20" y="52" width="316" height="130" rx="6" fill="none" class="s-p" stroke-width="1.6" opacity="0.8"/>
+          <text x="20" y="40" font-family="IBM Plex Mono, monospace" font-size="11" class="t-p" letter-spacing="1.2">에이전트가 점유</text>
+          <text x="38" y="80"  font-family="IBM Plex Mono, monospace" font-size="12.5" class="t-p">agent/window-label.sh</text>
+          <text x="38" y="104" font-family="IBM Plex Sans KR, sans-serif" font-size="12.5" fill="currentColor">창 이름 ← 라벨</text>
+          <text x="38" y="126" font-family="IBM Plex Sans KR, sans-serif" font-size="12.5" fill="currentColor">@cc · @cc_sym · @cc_color ← 씀</text>
+          <text x="38" y="152" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.65">훅이 부른다 (턴마다, 도구마다)</text>
+
+          <rect x="424" y="52" width="316" height="130" rx="6" fill="none" class="s-d" stroke-width="1.6" opacity="0.8"/>
+          <text x="424" y="40" font-family="IBM Plex Mono, monospace" font-size="11" class="t-d" letter-spacing="1.2">셸이 점유</text>
+          <text x="442" y="80"  font-family="IBM Plex Mono, monospace" font-size="12.5" class="t-d">PROMPT_COMMAND</text>
+          <text x="442" y="104" font-family="IBM Plex Sans KR, sans-serif" font-size="12.5" fill="currentColor">창 이름 ← 라벨 (cd 하면 따라감)</text>
+          <text x="442" y="126" font-family="IBM Plex Sans KR, sans-serif" font-size="12.5" fill="currentColor">@cc · @cc_sym · @cc_color ← <tspan class="t-d">지움</tspan></text>
+          <text x="442" y="152" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.65">프롬프트가 그려질 때마다</text>
+
+          <path d="M 342 96 C 372 96 392 96 418 96" fill="none" class="s-d" stroke-width="1.8" marker-end="url(#a5d)"/>
+          <text x="380" y="86" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="11" class="t-d">종료</text>
+          <path d="M 418 138 C 392 138 372 138 346 138" fill="none" class="s-p" stroke-width="1.8" marker-end="url(#a5)"/>
+          <text x="380" y="158" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="11" class="t-p">실행</text>
+
+          <line x1="20" y1="216" x2="740" y2="216" stroke="currentColor" stroke-width="1" opacity="0.2"/>
+          <text x="380" y="246" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="13.5" fill="currentColor">두 주인은 절대 겹치지 않는다 — 프롬프트는 전경 프로그램이 없을 때만 그려진다.</text>
+          <text x="380" y="274" text-anchor="middle" font-family="IBM Plex Sans KR, sans-serif" font-size="13.5" font-weight="500" class="t-p">그래서 상태줄에 기호가 있다 = 그 창에 에이전트가 살아있다.</text>
+        </svg>
+        <figcaption>소유권은 나뉘지만 <strong>라벨을 짓는 규칙은 한 벌</strong>입니다 — <code>agent/label-of.sh</code> 를 훅과 셸이 함께 <code>source</code> 합니다. 예전엔 같은 3분기와 같은 자르기 길이가 두 파일에 각각 적혀 있었고, 한쪽만 고치면 같은 디렉토리가 셸일 때와 에이전트일 때 다른 이름으로 보였습니다.</figcaption>
+      </figure>
+
+      <div class="note good">
+        <p><b>이름 비교만으로는 부족합니다.</b> 에이전트는 보통 이름을 라벨 그대로 둔 채 죽습니다. 그래서 “이름이 이미 맞으니 할 일 없다” 고 빠져나가면 완료 기호가 영원히 굳습니다. 셸 쪽은 <strong>이름이 맞더라도 <code>@cc</code> 가 남아 있으면 치웁니다.</strong></p>
+      </div>
+
+      <h3>탭 하나가 창 이름을 “done” 으로 바꾼 사고</h3>
+      <p>셸 쪽은 tmux 값 세 개를 한 번에 읽습니다. 처음엔 탭으로 이어 붙여 <code>read</code> 로 쪼갰는데, <strong>탭은 <code>IFS</code> 의 공백류라 <code>read</code> 가 연속된 탭을 하나로 합칩니다.</strong> <code>@cc_label</code> 이 빈 창에서는 필드가 하나 밀려서, <code>@cc</code> 의 값 <code>done</code> 이 “손수 고정한 작업명” 자리로 들어왔습니다. 창 이름이 <code>done</code> 이 됐습니다.</p>
+      <p>구분자를 US(<code>0x1f</code>) 같은 비인쇄 문자로 바꾸는 길도 막혀 있습니다 — <code>tmux display -p</code> 가 비인쇄 문자를 옥탈 이스케이프 넉 자로 바꿔 내보냅니다. 그래서 <code>read</code> 대신 파라미터 확장으로 직접 쪼갭니다.</p>
+
+      <div class="term"><span class="c"># 빈 필드가 사라지지 않도록 read 를 쓰지 않는다</span>
+cur=${out%%$'\t'*};  out=${out#*$'\t'}
+manual=${out%%$'\t'*};  state=${out#*$'\t'}</div>
+
+      <div class="note">
+        <p>git 호출은 디렉토리당 한 번만 돕니다(<code>_CC_LABEL_CACHE</code>). 프롬프트마다 <code>git rev-parse</code> 를 부르면 프롬프트가 느려집니다. <strong>SSH 로 다른 머신에 들어간 창은 원격 셸이라 로컬 tmux 이름을 못 바꿉니다</strong> — 알려진 한계입니다.</p>
+      </div>
+    </section>
+
+    <!-- ══════════════ 6 ══════════════ -->
+    <section id="s6">
+      <h2><span class="num">§6</span>프로필 색</h2>
+      <p class="lede"><code>agent/profiles.conf</code> — 어느 도구의 어느 계정이 그 창을 쓰고 있는지를 0칸으로 말하는 법.</p>
+
+      <p>프로필은 <strong>도구 + 계정</strong>입니다. 창 번호의 배경색이 그걸 나타냅니다. 색은 자리를 차지하지 않으므로 라벨을 밀어내지 않습니다.</p>
+
+      <div class="term"><span class="c"># &lt;AGENT_PROFILE 값&gt;  &lt;tmux 색&gt;</span>
+claude        colour33
+claude-team   colour135
+codex         colour208
+gemini        colour41
+copilot       colour178
+antigravity   colour160</div>
+      <p class="caption">
+        <span class="sw sw33">33</span> claude ·
+        <span class="sw sw135">135</span> claude-team ·
+        <span class="sw sw208">208</span> codex ·
+        <span class="sw sw41">41</span> gemini ·
+        <span class="sw sw178">178</span> copilot ·
+        <span class="sw sw160">160</span> antigravity —
+        색을 <code>-</code> 로 두면 그 프로필만 번호에 색을 입히지 않습니다.
+      </p>
+
+      <p>표시를 스크립트에 박아넣지 않고 표로 뺐습니다. <strong>“개인은 무표시” 방식은 계정이 셋이 되는 순간 무너지기 때문입니다</strong> — 그때는 어느 계정이 무표시여야 할지 답이 없습니다. 표라면 줄만 추가하면 됩니다. 표에 없는 이름이 들어오면 색 없이 라벨만 나옵니다 — 실패하지 않고 조용히 물러납니다.</p>
+
+      <h3>같은 것을 가리키는 두 변수</h3>
+      <p>헷갈리기 쉬운 지점이라 적어둡니다. <strong>tmux 창 번호색과 HUD 의 <code>profile:</code> 표시는 서로 다른 변수를 봅니다.</strong></p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>무엇</th><th>보는 값</th></tr></thead>
+          <tbody>
+            <tr><td>tmux 창 번호색</td><td><code>$AGENT_PROFILE</code> → <code>profiles.conf</code> 조회</td></tr>
+            <tr><td>OMC HUD 의 <code>profile:</code></td><td><code>basename($CLAUDE_CONFIG_DIR)</code> — <code>AGENT_PROFILE</code> 을 아예 모른다</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note bad">
+        <p><b>어긋난 창이 실제로 나왔습니다.</b> <code>CLAUDE_CONFIG_DIR</code> 만 걸린 채 실행된 세션이 team 계정을 쓰면서 창에는 개인 색을 달고 있었습니다. 그래서 <code>AGENT_PROFILE</code> 이 없으면 <code>window-label.sh</code> 가 <code>CLAUDE_CONFIG_DIR</code> 의 basename 에서 앞의 점을 떼어 유도합니다(<code>.claude-team</code> → <code>claude-team</code>). <strong>두 곳이 늘 같은 답을 내도록 규칙을 하나로 맞춘 것입니다.</strong></p>
+      </div>
+
+      <h3>실행 함수가 하는 일</h3>
+      <div class="term">claude-team() { CLAUDE_CONFIG_DIR=~/.claude-team AGENT_PROFILE=claude-team command claude "$@"; }
+codex()      { AGENT_PROFILE="${AGENT_PROFILE:-codex}" command codex "$@"; }</div>
+      <p>개인 계정도 같은 모양으로 감쌉니다. 값은 기본값과 같아서 동작은 달라지지 않지만, 기본값에 기대던 두 가지가 <em>명시적으로</em> 켜집니다 — 창 번호색과 HUD 의 <code>profile:</code> 줄. 안 걸면 개인 세션의 HUD 에는 그 줄이 통째로 빠져서, 창 색으로는 계정이 구분되는데 HUD 로는 알 수 없었습니다.</p>
+      <p>다만 <strong>덮어쓰지는 않습니다.</strong> 이미 걸려 있는 <code>CLAUDE_CONFIG_DIR</code> 을 개인 계정으로 되돌리면 방금 고친 불일치가 반대 방향으로 되살아납니다 — team 세션 안에서 <code>!claude</code> 를 부르는 경우가 그렇습니다.</p>
+      <p>Codex 를 감싼 이유는 다릅니다. Codex 에는 <code>CLAUDE_CONFIG_DIR</code> 같은 단서가 아예 없어서 프로필을 유도할 방법이 없습니다. 안 걸어주면 기본값 <code>claude</code> 로 떨어져 <strong>Codex 창이 개인 Claude 의 파랑을 답니다</strong> — 도구를 구분하려고 만든 표시가 거짓말을 하게 됩니다.</p>
+    </section>
+
+    <!-- ══════════════ 7 ══════════════ -->
+    <section id="s7">
+      <h2><span class="num">§7</span>다중 계정</h2>
+      <p class="lede"><code>shell/agents.sh</code> — 로그인은 완전히 가르되 2.2G 는 나눠 쓰는 법. 그리고 무엇을 나눠 쓰면 안 되는지.</p>
+
+      <h3>격리의 원리</h3>
+      <p>Claude Code 는 <code>CLAUDE_CONFIG_DIR</code> 로 설정 루트를 통째로 바꿉니다. Linux 에서 자격증명은 그 루트 안의 <code>.credentials.json</code> <strong>평문 파일</strong>이므로(keychain 이 아닙니다), 루트만 바꾸면 로그인이 완전히 분리됩니다.</p>
+
+      <h3>공유의 원리</h3>
+      <p>격리된 루트 안에서 무거운 것들을 <code>~/.claude</code> 로 심링크합니다. 대상은 <code>settings.json skills plugins hooks hud commands agents CLAUDE.md</code> 여덟 항목이고, 존재하는 것만 링크됩니다.</p>
+
+      <div class="note bad">
+        <p><b>그런데 통째로 공유하면 안 됩니다.</b> <code>plugins/</code> 를 통째로 심링크했더니 두 계정이 OMC <strong>사용량 캐시 파일 하나를 나눠 쓰게 됐습니다.</strong> 마지막으로 렌더한 계정의 5시간·주간 한도가 양쪽 HUD 에 다 떴습니다. TTL 90초가 지나도 최대 15분까지 옛 값을 먼저 내주고 뒤에서 갱신하므로, 한참 동안 틀린 숫자가 굳어 있었습니다.</p>
+      </div>
+
+      <p>여기서 규칙 하나가 나왔습니다.</p>
+      <p style="font-size:18px; font-weight:500; padding-left:20px; border-left:2px solid var(--personal);">설정과 내려받은 덩어리는 공유하고, <strong>돌면서 쌓이는 상태는 계정별로 둔다.</strong></p>
+
+      <p>그래서 이 항목들은 통째가 아니라 <strong>자식 단위로</strong> 링크합니다. 아래는 링크하지 않고 빈 디렉토리만 만들어 두는 자식들입니다.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>경로</th><th>무엇</th></tr></thead>
+          <tbody>
+            <tr><td><code>plugins/oh-my-claudecode/</code></td><td>OMC 사용량 캐시 <code>.usage-cache-*.json</code></td></tr>
+            <tr><td><code>hooks/.omc/</code></td><td>OMC 훅 상태 (세션별 디렉터리)</td></tr>
+            <tr><td><code>hud/cache/</code></td><td>스테이터스라인 렌더 캐시. 세션 id 로 갈리지만 <em>계정</em>은 안 가린다</td></tr>
+            <tr><td><code>plugins/installed_plugins.json</code><br><code>known_marketplaces.json</code> · <code>.last_inuse_sweep</code></td><td>공유하고 싶어도 <strong>못 한다</strong>. <code>installPath</code> 가 config-dir 절대경로다</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="caption">마지막 줄은 링크를 걸어도 Claude Code 가 tmp+rename 으로 곧바로 실제 파일로 갈아버려서, 점검이 영원히 “끊김” 을 보고하게 됩니다. 갈라도 손해는 없습니다 — 실제 내용물인 <code>cache/</code> 와 <code>marketplaces/</code> 는 여전히 공유되고, 각 계정은 <code>settings.json</code> 을 보고 알아서 다시 채웁니다.</p>
+
+      <div class="note good">
+        <p><b>새 자식이 생기면 알려줍니다.</b> 목록에 없는 자식을 처음 보면 <code>처음봄</code> 으로 출력합니다 — 상태인지 설정인지 사람이 판단해서 <code>CLAUDE_ACCOUNT_LOCAL</code> 또는 <code>..._SHARED_SEEN</code> 에 넣습니다. 판단을 자동화하지 않고 <strong>물어보게 만든</strong> 자리입니다.</p>
+      </div>
+
+      <h3>명령</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>명령</th><th>하는 일</th></tr></thead>
+          <tbody>
+            <tr><td><code>claude-accounts</code></td><td>계정별 로그인 여부와 공유 링크 상태를 표로 출력</td></tr>
+            <tr><td><code>claude-account-link team</code></td><td>계정 디렉토리 생성 + 끊긴 링크 복구. 몇 번 돌려도 안전</td></tr>
+            <tr><td><code>claude-team</code></td><td>team 계정으로 실행</td></tr>
+            <tr><td><code>ccname &lt;작업명&gt;</code></td><td>창 작업명 고정 (<code>--clear</code> 해제)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="term">$ <span class="hi">claude-accounts</span>
+ACCOUNT    CONFIG_DIR               LOGIN    SHARED-LINKS
+personal   ~/.claude                O        -
+team       ~/.claude-team           O        <span class="hi">끊김 3/6  → claude-account-link team</span></div>
+      <p class="caption">실제 출력입니다 — §8 참고.</p>
+
+      <div class="note good">
+        <p><b>복구가 파괴적이지 않습니다.</b> 심링크가 실제 파일로 바뀌어 있으면 지우지 않고 <code>.detached-&lt;타임스탬프&gt;</code> 로 옆에 치운 뒤 다시 링크합니다. 그 파일이 사용자가 편집한 내용일 수 있기 때문입니다.</p>
+      </div>
+
+      <p>계정을 늘리려면 <code>shell/agents.sh</code> 의 <code>CLAUDE_ACCOUNT_DIRS_&lt;이름&gt;</code> <strong>한 줄</strong>이면 됩니다. <code>claude-&lt;이름&gt;</code> 실행 함수와 <code>claude-accounts</code> 목록은 자동으로 따라옵니다. tmux 에서 구분하려면 <code>profiles.conf</code> 에 한 줄 더합니다.</p>
+    </section>
+
+    <!-- ══════════════ 8 ══════════════ -->
+    <section id="s8">
+      <h2><span class="num">§8</span>직접 확인한 것</h2>
+      <p class="lede">추정하지 않고 실제로 돌려본 것들. 아래 숫자는 전부 이 머신(WSL2)에서 이 문서를 쓰면서 잰 값이다.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>확인한 것</th><th>방법</th><th>결과</th></tr></thead>
+          <tbody>
+            <tr><td>훅 개수와 동기/비동기 배치</td><td><code>settings.json</code> 을 파싱해 셈</td><td>8개 — 동기 3(gstack) · 비동기 5(창 이름)</td></tr>
+            <tr><td>훅 비용</td><td>조기탈출 20회 · 전체렌더 40회 측정</td><td><strong>12.0ms / 41.9ms</strong> · 둘 다 <code>async</code> 라 턴을 막지 않음</td></tr>
+            <tr><td><code>~/.claude/settings.json</code> 의 정체</td><td><code>ls -l</code></td><td>심링크 아님 — 6,922바이트 실제 파일 = 오버레이 병합 생성물</td></tr>
+            <tr><td>공유 덩어리 크기</td><td><code>du -sh</code></td><td><code>skills/</code> 1.5G · <code>plugins/</code> 678M</td></tr>
+            <tr><td>자격증명 격리</td><td><code>~/.claude-team</code> 내부 확인</td><td>별도 <code>.credentials.json</code> 존재 · 양쪽 다 로그인 상태</td></tr>
+            <tr><td>공유 링크 상태</td><td><code>claude-accounts</code></td><td class="num">team 끊김 3/6 ← 아래</td></tr>
+            <tr><td>심링크 통과 쓰기</td><td><code>model</code> 이 <code>opus[1m]</code> 인 채 저장소에 있음</td><td>링크 유지 · 저장소까지 반영</td></tr>
+            <tr><td>훅 커맨드의 <code>$HOME</code> 확장</td><td>훅에 프로브 값을 심고 도구 호출</td><td>확장됨 — 경로 치환 장치 불필요</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note bad">
+        <p><b>이번에 걸린 것 — team 계정의 공유 링크가 통째 심링크로 되돌아가 있습니다.</b> <code>hooks</code> · <code>hud</code> · <code>plugins</code> 셋이 자식 단위가 아니라 항목 통째로 링크돼 있습니다. <strong>이게 정확히 §7의 사용량 캐시 사고가 일어나는 상태입니다.</strong> <code>claude-account-link team</code> 한 줄로 복구되고, 기존 내용은 <code>.detached-</code> 로 보존됩니다.</p>
+        <p>점검 도구가 자기가 막으려던 회귀를 실제로 잡아낸 사례라 그대로 남겨둡니다 — <strong>이 표에서 유일하게 “정상” 이 아닌 줄입니다.</strong></p>
+      </div>
+
+      <h3>이전 검증 (2026-08-29)</h3>
+      <p>구조가 바뀌기 전 판에서 확인해 둔 것들입니다. 방법이 그대로 쓸 만해서 남겨둡니다.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>확인한 것</th><th>방법</th><th>결과</th></tr></thead>
+          <tbody>
+            <tr><td>입력대기 → 작업중 복구</td><td>턴 흐름 7단계 시뮬레이션</td><td>답변 직후 <code>busy</code> 로 복구</td></tr>
+            <tr><td>라벨 로직</td><td>홈·git루트·git하위·비-git·빈 stdin·tmux밖 등 11개 케이스</td><td>전부 통과</td></tr>
+            <tr><td>링크 끊김 복구</td><td>심링크를 실제 파일로 바꿔놓고 복구 실행</td><td>끊김 감지 · 내용 보존 후 재링크</td></tr>
+            <tr><td>커밋될 파일</td><td>임시 <code>GIT_DIR</code> 로 인덱스만 만들어 확인</td><td>의도한 것만 · <code>.omc/</code> 차단됨</td></tr>
+            <tr><td>자격증명 격리</td><td>team 루트로 <code>claude -p</code> 실행</td><td><code>Not logged in</code> — 개인 계정은 정상 응답</td></tr>
+            <tr><td>훅 비용 (당시)</td><td>같은 방법으로 측정</td><td class="num">8ms / 21ms</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <p>당시 비밀정보 스캔에서 <code>.gitignore</code> 와 계정 스크립트가 걸렸지만 둘 다 오탐이었습니다 — 각각 <code>*credential*</code> <em>차단</em> 규칙과, 로그인 여부를 확인하려고 파일명을 참조한 것입니다.</p>
+      </div>
+
+      <p class="caption">비교 참고: 셸 프롬프트 쪽 창 이름 비용은 저장소 <code>README</code> 에 프롬프트당 5.6ms(이름이 이미 맞을 때) / 18ms(바꿔야 할 때)로 기록돼 있습니다. 훅 쪽이 더 비싼 것은 매번 프로세스를 새로 띄우고 <code>profiles.conf</code> 와 <code>label-of.sh</code> 를 읽기 때문입니다.</p>
+    </section>
+
+    <!-- ══════════════ 9 ══════════════ -->
+    <section id="s9">
+      <h2><span class="num">§9</span>함정</h2>
+      <p class="lede">알고 쓰면 문제가 아니고, 모르고 쓰면 조용히 어긋나는 것들.</p>
+
+      <h3>심링크가 끊길 수 있다</h3>
+      <p>설정을 원자적으로 쓰는 코드 경로(tmp 파일 생성 후 rename)를 만나면 심링크가 실제 파일로 바뀌고, <strong>저장소 추적이 조용히 끊깁니다.</strong> <code>./install.sh --check</code> 로 잡고 <code>./install.sh</code> 로 복구합니다. 기존 내용은 <code>.pre-install-&lt;타임스탬프&gt;</code> 로 보존됩니다.</p>
+      <p>다만 §2에서 봤듯 <code>model</code> 변경은 링크를 통과해 저장소까지 반영됐습니다. <strong>모든 쓰기 경로가 위험한 것은 아니라는 뜻</strong>이고, 그래서 정기적으로 <code>--check</code> 를 도는 편이 낫습니다.</p>
+
+      <h3>오버레이가 있으면 <code>~/.claude/settings.json</code> 은 생성물이다</h3>
+      <p>거기서 직접 고치면 다음 설치에 덮어쓰입니다. 공용이면 <code>claude/settings.json</code>, 이 머신만이면 오버레이를 고칩니다. Claude Code 가 “Yes, and don’t ask again” 으로 거기에 직접 쓰는 경우가 있으므로, <code>--check</code> 와 설치 시점에 무엇이 사라지는지 diff 로 보여줍니다.</p>
+
+      <h3><code>~/.claude/settings.local.json</code> 은 읽히지 않는다</h3>
+      <p>user 스코프엔 그런 파일이 없습니다. 만들어도 조용히 무시됩니다. 도구용 환경변수는 <code>shell/agents.sh</code> 에서 export 합니다.</p>
+
+      <h3>셸 함수는 대화형 셸에서만 산다</h3>
+      <p><code>.bashrc</code> 는 비대화형이면 앞부분에서 <code>return</code> 합니다. 새 창을 열거나 <code>source ~/.bashrc</code>. 창 이름이 셸 쪽에서 갱신되지 않는 것도 같은 이유입니다.</p>
+
+      <h3>alias 가 함수를 가린다</h3>
+      <p>예전에 손으로 넣은 <code>alias claude-team=...</code> 이 남아 있으면 <code>agents.sh</code> 의 함수 대신 그게 잡힙니다. <code>install.sh</code> 가 찾아서 주석 처리합니다. 같은 맥락에서 <code>.bashrc</code> 의 <code># >>> ai-agent-dotfiles >>></code> 블록은 <strong>통째로 갈아끼워집니다</strong> — 거기 직접 쓴 것은 다음 설치에 사라집니다.</p>
+
+      <h3>gstack 이 없으면</h3>
+      <p><code>AskUserQuestion</code> 관련 훅 3개가 조용히 실패합니다. Claude Code 는 훅이 느리거나 오류일 때만 “Ran N hooks” 를 표시하므로, <strong>조용한 성공과 조용한 실패를 구분하기 어렵습니다.</strong> 새 머신에서 질문 관련 동작이 이상하면 여기부터 봅니다. <code>./install.sh --check</code> 가 이런 외부 참조를 세어 <code>확인 필요</code> 로 보여줍니다.</p>
+
+      <h3>훅 설정 리로드</h3>
+      <p><code>settings.json</code> 을 바꿔도 실행 중인 세션이 즉시 반영하지 않을 수 있습니다. <code>@cc</code> 에 프로브 값을 심어 라이브 리로드를 확인한 적이 있지만, 안 되면 <code>/hooks</code> 를 한 번 열었다 닫으면 됩니다.</p>
+
+      <h3>Codex 훅은 신뢰 승인이 필요하다</h3>
+      <p><code>~/.codex/hooks.json</code> 배열에 항목을 끼워넣으면 인덱스가 밀려 기존 훅의 신뢰가 깨질 수 있습니다. 절차는 <code>codex/README.md</code>.</p>
+
+      <h3><code>ccname</code> 은 셸에서 못 친다</h3>
+      <p>해당 pane 에서 에이전트가 돌고 있으면 셸에 입력할 수 없습니다. Claude Code 안에서 <code>!ccname 작업명</code> 으로 실행합니다 — <code>!</code> 접두사가 세션의 cwd 에서 셸 명령을 돌려줍니다.</p>
+
+      <h3>긴 작업명은 잘린다</h3>
+      <p>24자 제한이라 그보다 길면 <code>…</code> 로 잘립니다. 게다가 상태줄에서 비활성 창은 여기서 다시 6자로 잘립니다. 바꾸려면 <code>agent/label-of.sh</code> 의 <code>AGENT_LABEL_MAXLEN</code> 과 <code>tmux/tmux.conf</code> 의 <code>#{=6:...}</code> 두 곳입니다.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    2026-09-01 기준 · Claude Code 2.1.251 · <code>jinmang2/ai-agent-dotfiles</code> · 이 문서의 수치와 동작은 해당 시점에 실제로 실행해 확인한 것입니다. 저장소 사본은 <code>docs/anatomy.html</code>.
+  </footer>
+
+</div>

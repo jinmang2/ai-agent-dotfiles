@@ -68,6 +68,7 @@ docs/           레퍼런스
   hud.md                 스테이터스라인 원리 + omcHud 옵션 전체
   orchestration.md       서브에이전트를 언제 묶어 띄우나 (측정 + 판단표)
   omc.md                 OMC 구조·훅·MCP 도구·실사용량 (5.0.2 기준)
+  anatomy.html           해부도 — 위 문서들이 설명하는 것이 실제로 어떻게 맞물리는지
 local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
   ssh-config           tailnet 별칭 (전 머신 공용)
   hosts/<호스트>/       이 머신에서만 쓰는 값
