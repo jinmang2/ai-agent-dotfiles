@@ -40,12 +40,12 @@ sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud-cache.sh \
 
 | | 보는 변수 | 표 |
 |---|---|---|
-| tmux 창 마커 (🔵🟣) | `AGENT_PROFILE` | `agent/profiles.conf` |
+| tmux 창 번호색 (파랑/보라) | `AGENT_PROFILE` | `agent/profiles.conf` |
 | HUD 의 `profile:` | `CLAUDE_CONFIG_DIR` 의 basename | 없음 (문자열 그대로) |
 
 HUD 는 `AGENT_PROFILE` 을 아예 모른다. `CLAUDE_CONFIG_DIR` 이 비어 있으면
 `profile:` 줄을 통째로 생략한다. 그래서 `shell/agents.sh` 는 personal 계정도
-`claude()` 함수로 감싸 두 변수를 다 채운다 — 안 그러면 창 이름으로는 🔵/🟣 가
+`claude()` 함수로 감싸 두 변수를 다 채운다 — 안 그러면 창 번호색으로는 계정이
 구분되는데 HUD 로는 어느 계정인지 알 수 없다.
 
 ## 계정을 여러 개 쓸 때 — 사용량 캐시

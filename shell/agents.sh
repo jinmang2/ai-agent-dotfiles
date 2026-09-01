@@ -210,13 +210,13 @@ _claude_define_account_runners
 # personal 계정(= ~/.claude 자체)도 같은 모양으로 감싼다. 값은 기본값과 같아서
 # 동작은 달라지지 않지만, 지금까지 기본값에 기대던 두 가지가 명시적으로 켜진다:
 #
-#   AGENT_PROFILE=claude   tmux 창 마커 🔵 (window-label.sh 의 fallback 에 의존하던 것)
+#   AGENT_PROFILE=claude   tmux 창 번호색 파랑 (window-label.sh 의 fallback 에 의존하던 것)
 #   CLAUDE_CONFIG_DIR      OMC HUD 의 profile: 표시
 #
-# 이 둘은 서로 다른 변수를 본다. tmux 마커는 AGENT_PROFILE 을 profiles.conf 에서
+# 이 둘은 서로 다른 변수를 본다. tmux 번호색은 AGENT_PROFILE 을 profiles.conf 에서
 # 찾고, HUD 는 AGENT_PROFILE 을 아예 모른 채 basename($CLAUDE_CONFIG_DIR) 만 쓴다.
 # 그래서 이걸 안 걸면 personal 세션의 HUD 에는 profile 줄이 통째로 빠져서,
-# 창 이름으로는 🔵/🟣 가 구분되는데 HUD 로는 어느 계정인지 알 수 없었다.
+# 창 번호색으로는 계정이 구분되는데 HUD 로는 어느 계정인지 알 수 없었다.
 #
 # 다만 덮어쓰지는 않는다. 이미 걸려 있는 CLAUDE_CONFIG_DIR 을 personal 로 되돌리면
 # 이번에 고친 불일치가 반대 방향으로 되살아난다 — team 세션 안에서 `!claude` 를
@@ -230,23 +230,26 @@ claude() {
 
 # Codex 도 같은 창 이름 훅을 쓴다 (~/.codex/hooks.json 이 agent-window-label 을 부른다).
 # 다만 Codex 에는 CLAUDE_CONFIG_DIR 같은 단서가 없어서 프로필을 유도할 방법이 없다.
-# 안 걸어주면 window-label.sh 의 기본값 claude 로 떨어져 Codex 창에 🔵(개인 Claude)
-# 마커가 붙는다 — 도구를 구분하려고 만든 표시가 거짓말을 하게 된다.
+# 안 걸어주면 window-label.sh 의 기본값 claude 로 떨어져 Codex 창 번호가 파랑
+# (개인 Claude)이 된다 — 도구를 구분하려고 만든 표시가 거짓말을 하게 된다.
 codex() { AGENT_PROFILE="${AGENT_PROFILE:-codex}" command codex "$@"; }
 
 # ── 창 이름: 셸이 주인일 때 ──────────────────────────────────────────────
 # 에이전트가 그 창을 떠났다는 이벤트는 없다. Claude Code 의 Stop 훅은 턴 끝에
-# 불릴 뿐이고, 강제 종료되면 아무 훅도 안 불린다. 그래서 종료 뒤에도 ✅🔵repo
-# 가 그대로 굳는다.
+# 불릴 뿐이고, 강제 종료되면 아무 훅도 안 불린다. 그래서 종료 뒤에도 상태줄의
+# ✓ 와 번호색이 그대로 굳는다.
 #
 # 대신 "셸이 프롬프트를 그렸다" 를 쓴다 — 그건 그 창에 전경 프로그램이 없을
 # 때만 일어나므로 정확히 "에이전트가 없다" 와 같다. 에이전트 실행 중에는
 # 프롬프트가 안 그려지니 훅과 싸우지 않는다.
 #
-#   셸이 주인   ->  이모지 없이 이름만      (여기)
-#   에이전트    ->  ⏳🔵 붙은 이름          (agent/window-label.sh)
+#   셸이 주인   ->  @cc/@cc_sym/@cc_color 없음, 이름만   (여기)
+#   에이전트    ->  @cc 상태 + 상태줄 기호·번호색        (agent/window-label.sh)
 #
-# 그래서 이모지가 붙어 있으면 그 창에 에이전트가 살아있다는 뜻이 된다.
+# 그래서 상태줄에 기호(»?✓)가 있으면 그 창에 에이전트가 살아있다는 뜻이 된다.
+# 예전엔 이 신호가 창 이름의 이모지였는데, 좁은 상태줄에서 이모지 4칸이 라벨을
+# 3자로 밀어내서 창 옵션 + 상태줄 포맷(tmux/tmux.conf)으로 옮겼다. 이름은 이제
+# 양쪽 다 라벨뿐이라, 이름 비교만으로는 에이전트 흔적을 못 보고 @cc 를 봐야 한다.
 #
 # 나뉘는 건 소유권이지 규칙이 아니다. 라벨을 짓는 규칙은 훅과 한 벌을 쓴다
 # (agent/label-of.sh). 없으면 창 이름 기능만 조용히 빠지고 나머지는 그대로 산다.
@@ -260,9 +263,15 @@ if [ -r "$AGENT_LABEL_LIB" ]; then
   _cc_shell_window_name() {
     [ -n "${TMUX_PANE:-}" ] || return 0
 
-    local out cur manual want
-    out=$(tmux display -p -t "$TMUX_PANE" "#{window_name}"$'\t'"#{@cc_label}" 2>/dev/null) || return 0
-    IFS=$'\t' read -r cur manual <<< "$out"
+    # 쪼개기는 read 가 아니라 파라미터 확장으로 한다. 탭은 IFS 의 whitespace 라
+    # read 가 연속 탭을 하나로 합친다 — @cc_label 이 빈 창에서 @cc 값이 manual
+    # 자리로 밀려 들어와, 상태 문자열("done")로 창 이름을 바꾸는 사고가 실제로
+    # 났다. 탭 대신 US(0x1f) 같은 비인쇄 구분자를 쓰는 길도 막혀 있다 —
+    # display -p 가 비인쇄 문자를 옥탈 이스케이프(\037 넉 자)로 바꿔 내보낸다.
+    local out cur manual state want
+    out=$(tmux display -p -t "$TMUX_PANE" "#{window_name}"$'\t'"#{@cc_label}"$'\t'"#{@cc}" 2>/dev/null) || return 0
+    cur=${out%%$'\t'*}; out=${out#*$'\t'}
+    manual=${out%%$'\t'*}; state=${out#*$'\t'}
 
     if [ -n "$manual" ]; then
       want=$(_agent_label_fit "$manual")   # ccname 으로 고정한 작업명이 최우선
@@ -274,9 +283,15 @@ if [ -r "$AGENT_LABEL_LIB" ]; then
       fi
     fi
 
-    [ "$cur" = "$want" ] && return 0    # 이미 맞으면 tmux 호출 없이 끝
-    tmux rename-window -t "$TMUX_PANE" "$want" 2>/dev/null
-    tmux set -uw -t "$TMUX_PANE" @cc 2>/dev/null   # 다음 에이전트가 깨끗하게 시작하도록
+    # 이름이 이미 맞아도 @cc 가 남아 있으면 치워야 한다. 에이전트가 이름을 라벨
+    # 그대로 두고 죽는 게 보통이라, 이름 비교만 하고 빠지면 ✓ 가 영원히 굳는다.
+    [ "$cur" = "$want" ] && [ -z "$state" ] && return 0
+    [ "$cur" = "$want" ] || tmux rename-window -t "$TMUX_PANE" "$want" 2>/dev/null
+    if [ -n "$state" ]; then               # 다음 에이전트가 깨끗하게 시작하도록
+      tmux set -uw -t "$TMUX_PANE" @cc 2>/dev/null
+      tmux set -uw -t "$TMUX_PANE" @cc_sym 2>/dev/null
+      tmux set -uw -t "$TMUX_PANE" @cc_color 2>/dev/null
+    fi
   }
 
   # 중복 등록 방지 (agents.sh 를 다시 source 해도 안전)

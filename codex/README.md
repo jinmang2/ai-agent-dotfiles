@@ -21,13 +21,13 @@ Codex 훅 형식은 Claude Code 의 `settings.json` `hooks` 와 **스키마가 �
 
 | Claude Code | Codex | 상태 |
 |---|---|---|
-| `UserPromptSubmit` | `UserPromptSubmit` | ⏳ busy |
-| `Notification` | `PermissionRequest` | ❓ waiting |
-| `PostToolUse` | `PostToolUse` | ⏳ busy (복구) |
-| `Stop` | `Stop` | ✅ done |
+| `UserPromptSubmit` | `UserPromptSubmit` | » busy |
+| `Notification` | `PermissionRequest` | ? waiting |
+| `PostToolUse` | `PostToolUse` | » busy (복구) |
+| `Stop` | `Stop` | ✓ done |
 
 그래서 `agent/window-label.sh` 하나를 그대로 쓴다 (설치 위치 `~/.local/bin/agent-window-label`).
-프로필만 다르다 — `profiles.conf` 의 `codex 🟠`.
+프로필만 다르다 — `profiles.conf` 의 `codex colour208`(주황).
 
 ### 적용 절차 (수동. 이유가 있다)
 
@@ -49,9 +49,9 @@ Codex 는 비관리 훅을 `<파일>:<이벤트>:<인덱스>:<인덱스>` 키로
 3. Codex 실행 후 `/hooks` — 새 훅을 검토하고 신뢰
 4. OMX 훅 7개가 여전히 trusted 인지 같은 화면에서 확인
 
-`AGENT_PROFILE=codex` 가 걸려 있어야 🟠 마커가 붙는다. `shell/agents.sh` 의 `codex()`
-래퍼가 걸어준다 — 안 걸면 `window-label.sh` 의 기본값 `claude` 로 떨어져 Codex 창에
-🔵(개인 Claude) 마커가 붙는다. 도구를 구분하려고 만든 표시가 거짓말을 하게 된다.
+`AGENT_PROFILE=codex` 가 걸려 있어야 창 번호가 주황 배경이 된다. `shell/agents.sh` 의
+`codex()` 래퍼가 걸어준다 — 안 걸면 `window-label.sh` 의 기본값 `claude` 로 떨어져
+Codex 창 번호가 파랑(개인 Claude)이 된다. 도구를 구분하려고 만든 표시가 거짓말을 하게 된다.
 
 ## 상태줄
 
