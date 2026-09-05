@@ -10,9 +10,10 @@ user 스코프 settings.json 이 부르므로 모든 프로젝트·모든 머신
        {"protected_paths": ["assessment/data/", "docs/project/"]}
      쓰기·스테이징만 막고 읽기는 통과한다 (측정·채점이 거기서 도는 프로젝트가 있다).
   2. 비밀값 파일 (.env* · *.key · credentials) — 어디서나 같은 규칙.
-     **써도 되지만 보여주면 안 된다.** 보여준다 = 내용이 stdout·대화기록·다른 파일로
+     써도 되지만 보여주면 안 된다. 보여준다 = 내용이 stdout·대화기록·다른 파일로
      흐른다. 그걸 정하는 것은 파일 이름이 아니라 그 앞의 동사다.
-       통과  ls · stat · test · git ls-files · source · uv run --env-file …  (메타데이터 · 환경 적재)
+       통과  ls · stat · test · git ls-files · source · uv run --env-file …
+             (메타데이터 · 환경 적재)
        차단  cat · head · sed · cp · mv · vi · git add · git show · base64 …  (내용이 흐른다)
 
 .gitignore 는 `git add -f` 를 막지 못하고, permissions.deny 는 Read 도구만 본다.
@@ -61,13 +62,16 @@ SECRET_SAFE_VERB = re.compile(
     r")(?:\s|$)"
 )
 # `git log` 는 메타데이터지만 패치를 찍으면 내용이다.
-GIT_LOG_PATCH = re.compile(r"^\s*git\s+log\b.*(?:\s-[A-Za-z]*p\b|--patch\b|--full-diff\b|\s-[SG]\S)")
+GIT_LOG_PATCH = re.compile(
+    r"^\s*git\s+log\b.*(?:\s-[A-Za-z]*p\b|--patch\b|--full-diff\b|\s-[SG]\S)"
+)
 # `--env-file X` 는 정의상 환경 적재다 (uv · python-dotenv · node · docker).
 ENV_FILE_FLAG = re.compile(r"--env-file(?:=|\s+)\S+")
 # source 뒤에 환경을 통째로 쏟는 명령
 SOURCE_VERB = re.compile(r"^\s*(?:\.|source)\s+")
 ENV_DUMP = re.compile(r"^\s*(?:env|printenv|export\s+-p|set|declare\s+-x|typeset\s+-x)\s*$")
-# cp · mv 는 대상이 비밀값 파일이어도 원본이 아니면 아무것도 보여주지 않는다 (`cp .env.example .env.local`).
+# cp · mv 는 대상이 비밀값 파일이어도 원본이 아니면 아무것도 보여주지 않는다
+# (`cp .env.example .env.local`).
 COPY_VERB = re.compile(r"^\s*(?:cp|mv)\s+(.*)$")
 # JSON·설정 질의 도구의 `.key` 는 질의지 파일이 아니다 (`jq -r .key out.json`).
 QUERY_VERB = re.compile(r"^\s*(?:jq|yq|gojq|redis-cli|consul|etcdctl)\b")
@@ -106,7 +110,8 @@ GIT_COMMIT = re.compile(r"\bgit\s+commit\b")
 
 # heredoc: `<<'TAG'` … `TAG`. 따옴표 없는 태그는 $( ) 를 푸니 본문에 그게 있으면 남긴다.
 HEREDOC = re.compile(
-    r"<<-?\s*(?P<q>[\"']?)(?P<tag>[A-Za-z_][\w-]*)(?P=q)[^\n]*\n(?P<body>.*?)^[ \t]*(?P=tag)[ \t]*$",
+    r"<<-?\s*(?P<q>[\"']?)(?P<tag>[A-Za-z_][\w-]*)(?P=q)[^\n]*\n"
+    r"(?P<body>.*?)^[ \t]*(?P=tag)[ \t]*$",
     re.M | re.S,
 )
 # 셸이 아닌 인터프리터의 `-c '…'` · `-e '…'` 본문. bash -c · sh -c · ssh 는 셸 명령이라 빼지 않는다.
@@ -169,17 +174,23 @@ def split_segments(text: str) -> list[str]:
             if c == q:
                 q = ""
             elif c == "\\" and q == '"' and i + 1 < len(text):
-                buf.append(text[i + 1]); i += 1
+                buf.append(text[i + 1])
+                i += 1
         elif c in "\"'":
-            q = c; buf.append(c)
+            q = c
+            buf.append(c)
         elif c == "\\" and i + 1 < len(text):
-            buf.append(c); buf.append(text[i + 1]); i += 1
+            buf.append(c)
+            buf.append(text[i + 1])
+            i += 1
         elif c == "\n" or c == ";":
-            out.append("".join(buf)); buf = []
+            out.append("".join(buf))
+            buf = []
         elif c == "|" or c == "&":
             if i + 1 < len(text) and text[i + 1] == c:
                 i += 1
-            out.append("".join(buf)); buf = []
+            out.append("".join(buf))
+            buf = []
         else:
             buf.append(c)
         i += 1
@@ -189,11 +200,11 @@ def split_segments(text: str) -> list[str]:
 
 def _strip_quoted(text: str, aggressive: bool) -> str:
     """따옴표 속을 지운다. 남기는 것 셋 —
-      · 속이 비밀값 경로 그 자체 (`head ".env.local"`) — 공백·정규식 문자 없는 경로 하나일 때만
-      · `$( ) ${ }` 백틱이 든 것 — `"$(cat .env.local)"` 같은 치환이 숨어 있다
-        (작은따옴표는 `$(` `${` 만 — 큰따옴표 안의 작은따옴표일 수 있어서. 백틱은 마크다운이다)
-      · aggressive 가 아니면 공백 없는 것 — 공백이 있으면 경로가 아니라 문구·패턴이다
-        (`gh pr create --body "see .env docs"`)"""
+    · 속이 비밀값 경로 그 자체 (`head ".env.local"`) — 공백·정규식 문자 없는 경로 하나일 때만
+    · `$( ) ${ }` 백틱이 든 것 — `"$(cat .env.local)"` 같은 치환이 숨어 있다
+      (작은따옴표는 `$(` `${` 만 — 큰따옴표 안의 작은따옴표일 수 있어서. 백틱은 마크다운이다)
+    · aggressive 가 아니면 공백 없는 것 — 공백이 있으면 경로가 아니라 문구·패턴이다
+      (`gh pr create --body "see .env docs"`)"""
 
     def _keep_or_blank(m: re.Match[str], subst) -> str:
         inner = m.group(1)
@@ -224,6 +235,7 @@ def _write_targets(whole: str) -> list[str]:
 
 # ── 프로젝트 설정 ──────────────────────────────────────────────────────────
 
+
 def load_config(payload: dict) -> dict:
     """payload 의 cwd(먼저 CLAUDE_PROJECT_DIR)에서 위로 올라가며 .claude/guard.json 을 찾는다.
     없거나 깨져 있으면 빈 설정 — 비밀값 규칙만 남는다. 타입이 틀린 항목은 무시한다."""
@@ -234,7 +246,9 @@ def load_config(payload: dict) -> dict:
         starts.append(Path(payload["cwd"]))
     raw: dict = {}
     for start in starts:
-        found = next((d / CONFIG_NAME for d in (start, *start.parents) if (d / CONFIG_NAME).is_file()), None)
+        found = next(
+            (d / CONFIG_NAME for d in (start, *start.parents) if (d / CONFIG_NAME).is_file()), None
+        )
         if found is None:
             continue
         try:
@@ -246,16 +260,20 @@ def load_config(payload: dict) -> dict:
     paths = raw.get("protected_paths")
     allow = raw.get("allow_substrings", DEFAULT_ALLOW_SUBSTRINGS)
     return {
-        "protected_paths": [p for p in paths if isinstance(p, str) and p] if isinstance(paths, list) else [],
+        "protected_paths": [p for p in paths if isinstance(p, str) and p]
+        if isinstance(paths, list)
+        else [],
         "allow_substrings": tuple(a for a in allow if isinstance(a, str) and a)
-        if isinstance(allow, (list, tuple)) else DEFAULT_ALLOW_SUBSTRINGS,
+        if isinstance(allow, (list, tuple))
+        else DEFAULT_ALLOW_SUBSTRINGS,
     }
 
 
 # ── 판정 ──────────────────────────────────────────────────────────────────
 
+
 def data_reason(text: str, cfg: dict) -> str | None:
-    """보호 경로가 든 토큰이 있나. 예외(README.md)는 명령 전체가 아니라 **그 토큰** 안에서만 본다 —
+    """보호 경로가 든 토큰이 있나. 예외(README.md)는 명령 전체가 아니라 그 토큰 안에서만 본다 —
     `git add assessment/data/x README.md` 의 README 가 x 를 풀어주면 안 된다."""
     allow = cfg["allow_substrings"]
     for pfx in cfg["protected_paths"]:
