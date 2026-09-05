@@ -8,7 +8,7 @@ Claude Code · Codex CLI · Gemini · tmux · 셸 설정. 새 머신에서 `clon
 다만 그것들이 훅·스킬·서브에이전트·마켓플레이스로 *무엇을 하고 있는지* 알고 쓰고,
 재설치로 복원되는 것과 내가 만든 것을 섞지 않는다. 그래서 이 저장소는 작다.
 저장소에 든 건 대부분 프레임워크가 안 해주는 것들이다 — 창 이름, 다중 계정,
-머신별 설정 병합.
+머신별 설정 병합, 비밀값·보호 경로 가드.
 
 머신이 여러 대라는 걸 전제로 한다. 공용 메커니즘은 이 저장소에, 머신 고유 값은
 비공개 서브모듈의 `local/hosts/<호스트>/` 에 둔다 — `docs/machines.md`.
@@ -42,10 +42,11 @@ source ~/.bashrc
 ```
 agent/          두 도구가 공유하는 것
   window-label.sh    tmux 창 이름 (Claude·Codex 공용)
+  guard.py           가드 훅 — 비밀값 노출·보호 경로 쓰기를 실행 전에 차단 (docs/guard.md)
   label-of.sh        라벨 규칙 한 벌 (훅과 셸이 함께 source)
   profiles.conf      프로필 → 마커 표
 claude/         Claude Code 전용
-  settings.json      훅 8개 · 권한 · 플러그인 6개 · 스테이터스라인
+  settings.json      훅 9개 · 권한 · 플러그인 6개 · 스테이터스라인
 plugins/ai-agent-dotfiles/     배포 단위 (마켓플레이스로 설치됨)
   .claude-plugin/plugin.json
   agents/inspector.md          대상 하나를 읽고 사실만 보고
@@ -63,8 +64,9 @@ shell/
 scripts/
   merge-settings.py       공용 settings + 머신 오버레이 병합
   test-merge-settings.py  그 병합 규칙의 테스트 (28개)
+  test-guard.py           가드 훅의 판정 테스트 (50개)
 docs/           레퍼런스
-  hooks.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
+  hooks.md · guard.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
   hud.md                 스테이터스라인 원리 + omcHud 옵션 전체
   orchestration.md       서브에이전트를 언제 묶어 띄우나 (측정 + 판단표)
   omc.md                 OMC 구조·훅·MCP 도구·실사용량 (5.0.2 기준)
@@ -79,6 +81,7 @@ local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
 | 저장소 | → | 설치 위치 |
 |---|---|---|
 | `agent/window-label.sh` | 심링크 | `~/.local/bin/agent-window-label` |
+| `agent/guard.py` | 심링크 | `~/.local/bin/agent-guard` |
 | `agent/profiles.conf` | 심링크 | `~/.config/agent-profiles.conf` |
 | `agent/label-of.sh` | 심링크 | `~/.config/agent-dotfiles/label-of.sh` |
 | `shell/agents.sh` | 심링크 | `~/.config/agent-dotfiles/agents.sh` |
@@ -165,6 +168,7 @@ tmux 설정과 훅과 셸은 이 지점에서 결합돼 있다.
 | `./install.sh --check` | 저장소 ↔ 설치 위치 점검. 어긋나면 무엇이 달라지는지 diff 출력 |
 | `./install.sh --ssh-diff` | `~/.ssh/config` 이 다를 때 그 차이까지 출력 (tailnet 호스트명이 나온다) |
 | `python3 scripts/test-merge-settings.py` | settings 병합 규칙 테스트 |
+| `python3 scripts/test-guard.py` | 가드 훅 판정 테스트 |
 
 ## 다중 계정
 

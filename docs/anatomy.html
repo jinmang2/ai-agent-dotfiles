@@ -434,8 +434,8 @@
     <h1>에이전트 도트파일 해부도</h1>
     <p class="standfirst">tmux 창 이름이 어떻게 결정되고 누가 그것을 소유하는지, 훅이 언제 왜 도는지, 계정 두 개가 어떻게 격리되면서도 2.2G를 나눠 쓰는지, 그리고 저장소에 무엇을 담고 무엇을 왜 뺐는지.</p>
     <div class="meta">
-      <span><b>추적 파일</b> 33개</span>
-      <span><b>훅</b> 8개 · <b>플러그인</b> 6개</span>
+      <span><b>추적 파일</b> 37개</span>
+      <span><b>훅</b> 9개 · <b>플러그인</b> 6개</span>
       <span><b>공유</b> skills 1.5G · plugins 678M</span>
       <span><b>도구</b> Claude · Codex · Gemini · tmux · 셸</span>
     </div>
@@ -446,7 +446,7 @@
     <ol>
       <li><a href="#s1"><span>§1</span>한 벌과 설치 위치</a></li>
       <li><a href="#s2"><span>§2</span>settings.json</a></li>
-      <li><a href="#s3"><span>§3</span>훅 8개</a></li>
+      <li><a href="#s3"><span>§3</span>훅 9개</a></li>
       <li><a href="#s4"><span>§4</span>이름과 상태를 가르다</a></li>
       <li><a href="#s5"><span>§5</span>주인이 둘이다</a></li>
       <li><a href="#s6"><span>§6</span>프로필 색</a></li>
@@ -485,7 +485,7 @@
           <text x="16" y="26" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity="0.65" letter-spacing="1.2">GIT · 공개</text>
           <text x="16" y="44" font-family="IBM Plex Mono, monospace" font-size="12.5" font-weight="500" class="t-p">~/ai-agent-dotfiles</text>
           <rect x="16" y="56" width="252" height="212" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
-          <text x="34" y="82"  font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">agent/     창 이름 한 벌</text>
+          <text x="34" y="82"  font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">agent/     창 이름 · 가드</text>
           <text x="34" y="104" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">claude/    settings.json</text>
           <text x="34" y="126" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">codex/     템플릿·훅</text>
           <text x="34" y="148" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">gemini/  tmux/  shell/</text>
@@ -493,7 +493,7 @@
           <line x1="34" y1="186" x2="250" y2="186" stroke="currentColor" stroke-width="1" opacity="0.25"/>
           <text x="34" y="210" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity="0.7">install.sh  scripts/</text>
           <text x="34" y="232" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity="0.7">docs/  README.md</text>
-          <text x="34" y="256" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.6">실체 · 추적 파일 33개</text>
+          <text x="34" y="256" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.6">실체 · 추적 파일 37개</text>
 
           <!-- local (비공개) -->
           <text x="16" y="300" font-family="IBM Plex Mono, monospace" font-size="10.5" class="t-a" letter-spacing="1.2">GIT · 비공개 서브모듈</text>
@@ -505,7 +505,7 @@
           <!-- 도구 무관 -->
           <text x="470" y="26" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor" opacity="0.65" letter-spacing="1.2">도구 무관 · 공용</text>
           <rect x="470" y="36" width="354" height="106" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55"/>
-          <text x="488" y="62"  font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.local/bin/agent-window-label</text>
+          <text x="488" y="62"  font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.local/bin/agent-window-label  agent-guard</text>
           <text x="488" y="84"  font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.config/agent-profiles.conf</text>
           <text x="488" y="106" font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.config/agent-dotfiles/*.sh</text>
           <text x="488" y="128" font-family="IBM Plex Mono, monospace" font-size="12" class="t-p">~/.tmux.conf   ~/.gemini/GEMINI.md</text>
@@ -559,7 +559,7 @@
     <!-- ══════════════ 2 ══════════════ -->
     <section id="s2">
       <h2><span class="num">§2</span>settings.json</h2>
-      <p class="lede">148행. 훅 8개, 플러그인 6개, 권한 18줄, 스테이터스라인 1개. 경로 하드코딩 0곳.</p>
+      <p class="lede">148행. 훅 9개, 플러그인 6개, 권한 18줄, 스테이터스라인 1개. 경로 하드코딩 0곳.</p>
 
       <h3>이식성 — <code>"$HOME"</code></h3>
       <p>처음엔 홈 절대경로가 여덟 곳에 박혀 있었습니다. 다른 머신에 그대로 가져가면 훅이 전부 죽는 상태였습니다. 훅 커맨드가 셸을 거쳐 실행되는지 실제로 프로브를 걸어 확인한 결과 <strong><code>$HOME</code> 이 확장됩니다.</strong> 그래서 설치 시점 경로 치환(sed) 같은 장치 없이 전부 이렇게 바뀌었습니다.</p>
@@ -574,11 +574,11 @@
           <thead><tr><th>키</th><th>값</th><th>역할</th></tr></thead>
           <tbody>
             <tr><td><code>env</code></td><td><code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1</code></td><td>에이전트 팀 기능. 바이너리에 실재하는 변수임을 확인함</td></tr>
-            <tr><td><code>model</code></td><td><code>opus[1m]</code></td><td>Opus + 1M 컨텍스트. <code>[1m]</code> 은 실제 접미사 문법</td></tr>
+            <tr><td><code>model</code></td><td><code>claude-fable-5-1[1m]</code></td><td>Fable 5.1 + 1M 컨텍스트. <code>[1m]</code> 은 실제 접미사 문법. 세션에서 <code>/model</code> 로 바꾼 값이 저장소로 따라온 것</td></tr>
             <tr><td><code>effortLevel</code></td><td><code>high</code></td><td>추론 강도</td></tr>
             <tr><td><code>permissions.allow</code></td><td>18줄</td><td>읽기 전용 조회만 (<code>git status</code>, <code>gh pr view</code>, <code>df -h</code> …). 쓰는 명령은 한 줄도 없다</td></tr>
-            <tr><td><code>hooks</code></td><td>6개 이벤트 · 훅 8개</td><td>§3</td></tr>
-            <tr><td><code>statusLine</code></td><td><code>omc-hud-cache.sh</code></td><td>OMC HUD — 사용량·모델·컨텍스트</td></tr>
+            <tr><td><code>hooks</code></td><td>6개 이벤트 · 훅 9개</td><td>§3</td></tr>
+            <tr><td><code>statusLine</code></td><td><code>omc-hud-cache.sh</code></td><td>OMC HUD — 사용량·모델·에이전트</td></tr>
             <tr><td><code>enabledPlugins</code></td><td>6개</td><td>새 머신에서 <em>자동 설치됨</em></td></tr>
             <tr><td><code>extraKnownMarketplaces</code></td><td>4곳</td><td>위 플러그인의 출처 등록</td></tr>
           </tbody>
@@ -606,7 +606,7 @@
 
     <!-- ══════════════ 3 ══════════════ -->
     <section id="s3">
-      <h2><span class="num">§3</span>훅 8개</h2>
+      <h2><span class="num">§3</span>훅 9개</h2>
       <p class="lede">상태 세 개와, 그 사이를 옮기는 이벤트 네 개. 그리고 “질문에 답했다” 는 이벤트가 없다는 사실을 우회하는 법.</p>
 
       <ul class="chips">
@@ -674,11 +674,12 @@
         <figcaption>굵은 파란 화살표가 복구 경로입니다. 점선 자기 루프는 도구가 연달아 실행될 때인데, 상태가 이미 <code>busy</code> 이므로 <code>tmux show</code> 한 번만 하고 즉시 빠져나옵니다.</figcaption>
       </figure>
 
-      <h3>등록된 훅 8개</h3>
+      <h3>등록된 훅 9개</h3>
       <div class="tablewrap">
         <table>
           <thead><tr><th>이벤트</th><th>매처</th><th>훅</th><th class="num">async</th></tr></thead>
           <tbody>
+            <tr><td><code>PreToolUse</code></td><td>Read · Write · Edit · NotebookEdit · Bash</td><td><code>agent-guard</code> — 비밀값 노출 · 보호 경로 쓰기 차단 (docs/guard.md)</td><td class="num">아니오</td></tr>
             <tr><td><code>PreToolUse</code></td><td>AskUserQuestion</td><td>gstack question-preference</td><td class="num">아니오</td></tr>
             <tr><td><code>PostToolUse</code></td><td>AskUserQuestion</td><td>gstack question-log</td><td class="num">아니오</td></tr>
             <tr><td><code>PostToolUse</code></td><td>AskUserQuestion</td><td>gstack auq-error-fallback</td><td class="num">아니오</td></tr>
@@ -691,7 +692,7 @@
         </table>
       </div>
 
-      <p>gstack 훅 3개만 <strong>동기</strong>입니다 — 이들은 <code>permissionDecision</code> 을 반환해 Claude Code 의 진행을 실제로 통제하므로 결과를 기다려야 합니다. 창 이름 훅 5개는 순수 표시이므로 전부 <code>async: true</code> 이고 턴을 막지 않습니다.</p>
+      <p>가드 훅과 gstack 훅 3개만 <strong>동기</strong>입니다 — 이들은 종료코드 2 나 <code>permissionDecision</code> 으로 Claude Code 의 진행을 실제로 통제하므로 결과를 기다려야 합니다. 창 이름 훅 5개는 순수 표시이므로 전부 <code>async: true</code> 이고 턴을 막지 않습니다.</p>
 
       <div class="note">
         <p>도구 <em>실패</em>도 <code>PostToolUseFailure</code> 로 똑같이 <code>busy</code> 로 되돌립니다. 도구가 실패해도 작업은 계속되기 때문입니다 — 실패했다고 창이 입력대기나 완료에 멈춰 있으면 그게 거짓말이 됩니다.</p>

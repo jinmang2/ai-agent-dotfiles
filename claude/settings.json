@@ -2,7 +2,7 @@
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
-  "model": "opus[1m]",
+  "model": "claude-fable-5-1[1m]",
   "effortLevel": "high",
   "theme": "dark",
   "tui": "default",
@@ -32,6 +32,16 @@
   },
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$HOME\"/.local/bin/agent-guard",
+            "timeout": 10
+          }
+        ]
+      },
       {
         "matcher": "(AskUserQuestion|mcp__.*__AskUserQuestion)",
         "hooks": [
