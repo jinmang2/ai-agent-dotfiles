@@ -132,6 +132,7 @@
   "omcHud": {
     "preset": "focused",
     "elements": {
+      "omcLabel": false,
       "useBars": false,
       "contextBar": true,
       "promptTime": false,

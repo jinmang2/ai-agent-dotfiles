@@ -10,6 +10,7 @@ OMC 가 만들지만 **설정은 `claude/settings.json` 의 `omcHud` 키에 두�
 "omcHud": {
   "preset": "focused",
   "elements": {
+    "omcLabel": false,       // [OMC#5.1.0L] 자기 라벨 — 버전은 install.sh --check 가 이미 본다
     "useBars": false,        // focused 가 켜는 [##] 막대 — 좁은 창에서 자리만 먹는다
     "contextBar": true,      // ctx:% 표시.  Claude Code 가 stdin 으로 주는 네이티브 값이라 정확하다
     "promptTime": false, "sessionHealth": false, "thinking": false,
