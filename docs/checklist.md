@@ -30,6 +30,7 @@ claude                                          # 3. 플러그인 자동 설치 
 | 그 창에서 `claude` 실행 | 상태줄에 `»` 기호·번호 배경색이 붙는지, 종료하면 다시 빠지는지 |
 | `python3 scripts/test-merge-settings.py` | 28개 통과 |
 | `python3 scripts/test-guard.py` | 50개 통과 |
+| `python3 scripts/test-window-label.py` | 4개 통과 (tmux 필요) |
 | `echo '{"tool_name":"Bash","tool_input":{"command":"cat .env.local"}}' \| agent-guard; echo $?` | `2` (가드 훅이 산다) |
 
 창 이름이 안 붙으면 tmux 밖이거나 `automatic-rename` 이 켜져 있는 것이다.

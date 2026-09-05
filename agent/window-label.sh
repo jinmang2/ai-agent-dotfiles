@@ -32,6 +32,19 @@ state="${2:-}"
 command -v tmux >/dev/null 2>&1 || exit 0
 
 payload=$(cat 2>/dev/null)
+payload_cwd=$(printf '%s' "$payload" \
+  | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+
+# --- 임시 디렉토리에서 도는 세션은 이 창의 주인이 아니다 ---
+# 에이전트가 도구 안에서 `claude -p` 를 다시 띄우면(pipespec 의 CLI 어댑터가
+# tempfile.TemporaryDirectory() 안에서 그렇게 한다) 그 중첩 세션도 이 훅을 부른다.
+# 그대로 두면 창 이름이 `tmpy2go8nt6` 가 되고, 중첩 실행의 Stop 이 바깥 세션이 아직
+# 도는데 ✓ 를 찍는다.  임시 루트 아래의 cwd 는 통째로 무시한다 — 이름도 상태도.
+# 대가: 스크래치패드 워크트리(/tmp/claude-…)에서 도는 정상 세션은 라벨이 셸의 cwd
+# (바깥 저장소 이름)로 남는다.  임시 디렉토리 이름이 뜨는 것보다 낫다.
+case "$payload_cwd" in
+  "${TMPDIR:-/tmp}"/*|/tmp/*|/var/tmp/*|/private/tmp/*) exit 0 ;;
+esac
 
 # --- 조기 탈출: 이미 같은 상태면 아무것도 하지 않는다 ---
 # PostToolUse 는 도구 호출마다 불리므로, 연타되는 경우 tmux show 한 번으로 끝낸다.
@@ -76,8 +89,7 @@ label=$(tmux show -w -t "$TMUX_PANE" -v @cc_label 2>/dev/null)
 if [ -n "$label" ]; then
   label=$(_agent_label_fit "$label")
 else
-  cwd=$(printf '%s' "$payload" \
-    | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+  cwd=$payload_cwd
   [ -n "$cwd" ] && [ -d "$cwd" ] || cwd=$(tmux display -p -t "$TMUX_PANE" '#{pane_current_path}' 2>/dev/null)
   [ -n "$cwd" ] || cwd=$PWD
   label=$(_agent_label_of "$cwd")

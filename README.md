@@ -65,6 +65,7 @@ scripts/
   merge-settings.py       공용 settings + 머신 오버레이 병합
   test-merge-settings.py  그 병합 규칙의 테스트 (28개)
   test-guard.py           가드 훅의 판정 테스트 (50개)
+  test-window-label.py    창 이름 훅 테스트 — 별도 tmux 서버에서 4개
 docs/           레퍼런스
   hooks.md · guard.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
   hud.md                 스테이터스라인 원리 + omcHud 옵션 전체
@@ -153,6 +154,12 @@ tmux 설정과 훅과 셸은 이 지점에서 결합돼 있다.
 디렉토리별로 캐시해 한 번만 돈다. SSH 로 다른 머신에 들어간 창은 원격 셸이라
 로컬 tmux 이름을 못 바꾼다 — 알려진 한계다.
 
+**임시 디렉토리에서 도는 세션은 창의 주인이 아니다.** 에이전트가 도구 안에서 `claude -p`
+를 다시 띄우면 그 중첩 세션도 같은 창에서 훅을 부른다. 실제로 pipespec 의 CLI 어댑터가
+`TemporaryDirectory()` 안에서 그렇게 해서 창 이름이 `tmpy2go8nt6` 가 됐다. 훅은 `/tmp`
+류 아래의 cwd 를 통째로 무시한다 — 이름도 상태도. `python3 scripts/test-window-label.py`
+가 이 규칙을 고정한다.
+
 ## 명령
 
 | 명령 | 하는 일 |
@@ -169,6 +176,7 @@ tmux 설정과 훅과 셸은 이 지점에서 결합돼 있다.
 | `./install.sh --ssh-diff` | `~/.ssh/config` 이 다를 때 그 차이까지 출력 (tailnet 호스트명이 나온다) |
 | `python3 scripts/test-merge-settings.py` | settings 병합 규칙 테스트 |
 | `python3 scripts/test-guard.py` | 가드 훅 판정 테스트 |
+| `python3 scripts/test-window-label.py` | 창 이름 훅 테스트 (별도 tmux 소켓, 실제 창은 안 건드린다) |
 
 ## 다중 계정
 
