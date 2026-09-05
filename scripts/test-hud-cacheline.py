@@ -27,41 +27,32 @@ def plain(s: str) -> str:
 
 
 class CacheLine(unittest.TestCase):
-    def test_남은_수명과_비용을_낸다(self):
-        now = int(time.time())
-        out = plain(run({"prompt_cache": {"ttl": "1h", "expires_at": now + 59 * 60,
-                                          "caching_observed": True},
+    def test_적중률과_비용을_낸다(self):
+        # 만료 카운트다운은 활동 사용자에겐 늘 ~59m 로 고정이라 무의미하다.
+        # 대신 세션마다 다르고 의미 있는 캐시 적중률을 낸다.
+        out = plain(run({"prompt_cache": {"caching_observed": True, "hit_ratio": 0.97},
                         "cost": {"total_cost_usd": 166.09}}))
-        self.assertRegex(out, r"cache 5[0-9]m")
+        self.assertIn("cache 97%", out)
         self.assertIn("$166", out)
 
-    def test_유휴로_줄어든다(self):
-        now = int(time.time())
-        five = plain(run({"prompt_cache": {"ttl": "1h", "expires_at": now + 5 * 60,
-                                           "caching_observed": True}}))
-        self.assertRegex(five, r"cache [45]m")
+    def test_적중률_낮으면_빨강(self):
+        raw = run({"prompt_cache": {"caching_observed": True, "hit_ratio": 0.4}})
+        self.assertIn("203", raw, "70% 미만이면 빨강(203)")
+        self.assertIn("cache 40%", plain(raw))
 
-    def test_만료되면_cold(self):
-        now = int(time.time())
-        out = plain(run({"prompt_cache": {"ttl": "1h", "expires_at": now - 100,
-                                          "caching_observed": True}}))
-        self.assertIn("cold", out)
-        self.assertNotIn("-", out, "음수 분을 그대로 내면 안 된다")
+    def test_적중률_높으면_초록(self):
+        raw = run({"prompt_cache": {"caching_observed": True, "hit_ratio": 0.97}})
+        self.assertIn("114", raw, "90% 이상이면 초록(114)")
 
-    def test_임박하면_빨강(self):
-        now = int(time.time())
-        raw = run({"prompt_cache": {"ttl": "1h", "expires_at": now + 2 * 60,
-                                    "caching_observed": True}})
-        self.assertIn("203", raw, "3분 미만이면 빨강(203)")
+    def test_적중률이_없으면_캐시_필드를_뺀다(self):
+        # 어떤 세션은 hit_ratio 를 안 채운다 — 그때는 0% 로 오해시키지 말고 뺀다
+        out = plain(run({"prompt_cache": {"caching_observed": True}, "cost": {"total_cost_usd": 3.2}}))
+        self.assertNotIn("cache", out)
+        self.assertIn("$3", out)
 
-    def test_넉넉하면_초록(self):
-        now = int(time.time())
-        raw = run({"prompt_cache": {"ttl": "1h", "expires_at": now + 40 * 60,
-                                    "caching_observed": True}})
-        self.assertIn("114", raw, "넉넉하면 초록(114)")
-
-    def test_캐시_정보가_없으면_캐시_필드를_뺀다(self):
-        out = plain(run({"cost": {"total_cost_usd": 3.2}}))
+    def test_캐시_관측_안됐으면_뺀다(self):
+        out = plain(run({"prompt_cache": {"caching_observed": False, "hit_ratio": 0.9},
+                        "cost": {"total_cost_usd": 3.2}}))
         self.assertNotIn("cache", out)
         self.assertIn("$3", out)
 

@@ -2,23 +2,22 @@
 """상태줄 셋째 줄 — 프롬프트 캐시 남은 수명 + 세션 비용.  agent/statusline 이 붙인다.
 
 Claude Code 가 상태줄 stdin 으로 주는 것에서만 읽는다:
-  prompt_cache.expires_at · ttl · caching_observed  → 워밍된 캐시가 언제 식나
-  cost.total_cost_usd                               → 세션 누적 비용
+  prompt_cache.hit_ratio · caching_observed  → 캐시가 얼마나 잘 맞나(효율)
+  cost.total_cost_usd                        → 세션 누적 비용
 
-**캐시 타이머가 유휴 중에 줄어드는 이유:**  Claude Code 는 유휴에도 상태줄을 주기적으로
-다시 그리는데, 그동안 `expires_at` 은 마지막 요청 시각(+1h)에 고정된 채 현재 시각만
-흘러간다.  그래서 `expires_at - now` 가 59m → … → 0 으로 줄어든다.  0(cold)이 되면 다음
-메시지가 컨텍스트를 통째로 다시 읽는다(prompt_cache.recache_tokens_if_cold, 수십만 토큰).
-곧 자리를 비우거나 /compact 할 거면 이게 낮을 때 하면 추가 비용이 없다.
+**왜 적중률인가 (만료 타이머가 아니라):**  만료까지 남은 시간(expires_at - now)은 매
+요청이 캐시를 1시간으로 갱신하기 때문에, 활동 중 상태줄을 볼 때 늘 ~59m 로 고정돼 보인다
+(유휴 재렌더 때만 줄지만 그때는 안 본다).  그래서 무의미하다.  대신 세션 캐시 적중률을
+낸다 — 세션마다 다르고, 낮으면 재읽기에 헛돈을 쓰는 중이라는 실제 신호다.  프로젝트별
+캐시 낭비 상세는 `agent-usage cache`.
 
-색: 넉넉(초록) · 임박(노랑) · 3분 미만/만료(빨강).  값이 없는 필드는 뺀다.  둘 다 없으면
+색: 적중률 90%↑ 초록 · 70%↑ 노랑 · 그 아래 빨강.  값이 없는 필드는 뺀다.  둘 다 없으면
 아무것도 내지 않는다(빈 줄이 생기지 않게).
 """
 from __future__ import annotations
 
 import json
 import sys
-import time
 
 R = "\033[0m"
 GREEN, YELLOW, RED, DIM = "38;5;114", "38;5;214", "38;5;203", "38;5;245"
@@ -29,17 +28,17 @@ def c(code: str, s: str) -> str:
 
 
 def cache_field(pc: dict) -> str | None:
+    """캐시 적중률.  만료 카운트다운(expires_at)은 활동 사용자에겐 늘 ~59m 로 고정이라
+    (매 요청이 캐시를 갱신) 쓸모없다 — 세션마다 다르고 의미 있는 적중률을 낸다.
+    낮으면 재읽기에 헛돈을 쓰는 중.  어떤 세션은 hit_ratio 를 안 채우니, 없으면 뺀다."""
     if not pc.get("caching_observed"):
         return None
-    exp = pc.get("expires_at")
-    if not isinstance(exp, (int, float)):
+    hr = pc.get("hit_ratio")
+    if not isinstance(hr, (int, float)):
         return None
-    left = int(exp) - int(time.time())
-    if left <= 0:
-        return c(RED, "cache cold")
-    mins = left // 60
-    color = GREEN if mins >= 15 else YELLOW if mins >= 3 else RED
-    return f"{c(DIM, 'cache')} {c(color, f'{mins}m')}"
+    pct = hr * 100
+    color = GREEN if pct >= 90 else YELLOW if pct >= 70 else RED
+    return f"{c(DIM, 'cache')} {c(color, f'{pct:.0f}%')}"
 
 
 def cost_field(cost: dict) -> str | None:
