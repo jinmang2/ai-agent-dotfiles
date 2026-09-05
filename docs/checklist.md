@@ -32,7 +32,7 @@ claude                                          # 3. 플러그인 자동 설치 
 | `python3 scripts/test-guard.py` | 51개 통과 |
 | `python3 scripts/test-window-label.py` | 7개 통과 (tmux 필요) |
 | `python3 scripts/test-statusline.py` | 4개 통과 |
-| `python3 scripts/test-hud-cacheline.py` | 9개 통과 |
+| `python3 scripts/test-hud-cacheline.py` | 8개 통과 |
 | `python3 scripts/test-usage.py` | 14개 통과 |
 | `echo '{"tool_name":"Bash","tool_input":{"command":"cat .env.local"}}' \| agent-guard; echo $?` | `2` (가드 훅이 산다) |
 

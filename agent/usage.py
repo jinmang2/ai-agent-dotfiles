@@ -4,8 +4,8 @@
 transcript 에는 토큰만 있고 달러가 없다(costUSD 부재, 실측 확인). 그래서 토큰×단가로
 **계산**한다 — 정확한 청구서가 아니라 추정이다. 단가표(PRICES)는 근사이고 고쳐도 된다.
 
-지금은 `cache` 한 명령: 캐시 낭비 분석. 남들(ccusage 등)이 비용은 잘 세도 캐시 효율은
-거의 안 보여준다 — 여기가 차별점이다. 뒤에 daily·projects 를 더한다.
+세 명령: `cache`(캐시 낭비)·`projects`(프로젝트별 비용)·`daily`(일별 비용). 남들(ccusage 등)이 비용은 잘 세도 캐시 효율은
+거의 안 보여준다 — 여기가 차별점이다.
 
 단가 근거 (claude-api 스킬, 2026-06 기준):
   입력/출력 per MTok: fable-5-1 10/50 · opus-5·4-8 5/25 · sonnet-5 2/10 · haiku-4-5 1/5
@@ -17,8 +17,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+from collections import namedtuple
 from pathlib import Path
+
+Rec = namedtuple("Rec", "project rid model usage date")
 
 M = 1_000_000
 
@@ -76,22 +80,21 @@ def _blank() -> dict:
             "counterfactual": 0.0, "turns": 0}
 
 
-def aggregate(records) -> dict:
-    """records = [(project, requestId, model, usage), ...] → {project: 누적}.
-    requestId 로 중복 제거하되 마지막 것을 쓴다(스트리밍 중간 항목 제거)."""
-    seen: dict[str, tuple] = {}  # requestId → 마지막 record
-    order: list[str] = []
+def aggregate(records, key=lambda r: r.project) -> dict:
+    """Rec 목록을 key(r) 로 묶는다.  requestId 로 중복 제거하되 마지막 것을 쓴다
+    (스트리밍 중간 항목 제거).  key 를 바꾸면 프로젝트별·날짜별 등 축을 고를 수 있다."""
+    seen: dict = {}  # requestId → 마지막 Rec
+    order: list = []
     for rec in records:
-        rid = rec[1]
-        if rid and rid not in seen:
-            order.append(rid)
-        seen[rid or id(rec)] = rec
-        if not rid:
-            order.append(id(rec))
+        k = rec.rid if rec.rid else id(rec)
+        if k not in seen:
+            order.append(k)
+        seen[k] = rec
     agg: dict[str, dict] = {}
-    for key in order:
-        proj, _rid, model, usage = seen[key]
-        a = agg.setdefault(proj, _blank())
+    for k in order:
+        rec = seen[k]
+        model, usage = rec.model, rec.usage
+        a = agg.setdefault(key(rec), _blank())
         a["turns"] += 1
         cw1h, cw5m = _split_cw(usage)
         a["tok"]["in"] += usage.get("input_tokens", 0)
@@ -119,8 +122,6 @@ def savings(a: dict) -> float:
 
 
 # ── 스캔 ────────────────────────────────────────────────────────────────────
-
-import re
 
 _HOME_PREFIX = re.compile(r"^-(?:home|Users)-[^-]+-")
 
@@ -160,7 +161,7 @@ def scan(roots):
                         continue
                     try:
                         d = json.loads(line)
-                    except Exception:  # noqa: BLE001
+                    except Exception:  # noqa: BLE001,S112
                         continue
                     msg = d.get("message") or {}
                     if msg.get("role") != "assistant":
@@ -168,14 +169,17 @@ def scan(roots):
                     usage = msg.get("usage")
                     if not isinstance(usage, dict):
                         continue
-                    yield (proj, d.get("requestId") or msg.get("id"), msg.get("model", ""), usage)
+                    date = (d.get("timestamp") or "")[:10]  # YYYY-MM-DD
+                    yield Rec(proj, d.get("requestId") or msg.get("id"), msg.get("model", ""), usage, date)
 
 
 # ── 리포트 ──────────────────────────────────────────────────────────────────
 
 def _k(n: int) -> str:
+    if n >= 1_000_000_000:
+        return f"{n/1_000_000_000:.1f}B"
     if n >= 1_000_000:
-        return f"{n/1_000_000:.1f}M"
+        return f"{n/1_000_000:.0f}M"
     if n >= 1000:
         return f"{n//1000}k"
     return str(n)
@@ -185,9 +189,39 @@ W = 30  # 프로젝트 이름 칸
 
 
 def _row(name, a):
-    return (f"{name[:W]:<{W}}{'$%.2f' % a['cost']['total']:>10}{hit_ratio(a)*100:>5.0f}%"
-            f"{'$%.0f' % a['cost']['cw']:>8}{'$%.0f' % a['cost']['cr']:>7}"
-            f"{'$%.0f' % savings(a):>9}{_k(a['tok']['cw1h']):>8}")
+    return (f"{name[:W]:<{W}}{'$'+format(a['cost']['total'],'.2f'):>10}{hit_ratio(a)*100:>5.0f}%"
+            f"{'$'+format(a['cost']['cw'],'.0f'):>8}{'$'+format(a['cost']['cr'],'.0f'):>7}"
+            f"{'$'+format(savings(a),'.0f'):>9}{_k(a['tok']['cw1h']):>8}")
+
+
+def _cost_row(name, a, w):
+    return (f"{name[:w]:<{w}}{'$'+format(a['cost']['total'],'.2f'):>10}"
+            f"{_k(a['tok']['in']):>8}{_k(a['tok']['out']):>9}"
+            f"{_k(a['tok']['cr']):>10}{_k(a['tok']['cw1h']+a['tok']['cw5m']):>10}{a['turns']:>7}")
+
+
+def cost_report(agg: dict, label: str, top: int | None = None) -> str:
+    """비용 중심 표 (daily·projects 공용).  label = 첫 칸 제목."""
+    rows = sorted(agg.items(), key=lambda kv: kv[1]["cost"]["total"], reverse=True)
+    if label == "date":  # 날짜는 시간순이 자연스럽다
+        rows = sorted(agg.items())
+    w = 16
+    out = [f"{label:<{w}}{'cost':>10}{'in':>8}{'out':>9}{'cache-rd':>10}{'cache-wr':>10}{'turns':>7}",
+           "─" * (w + 54)]
+    shown = rows[-top:] if (top and label == "date") else (rows[:top] if top else rows)
+    tot = _blank()
+    for _n, a in rows:
+        for k in tot["tok"]:
+            tot["tok"][k] += a["tok"][k]
+        for k in tot["cost"]:
+            tot["cost"][k] += a["cost"][k]
+    for name, a in shown:
+        out.append(_cost_row(name, a, w))
+    out.append("─" * (w + 49))
+    out.append(_cost_row(f"합계 {len(rows)}", tot, w))
+    out.append("")
+    out.append("단가는 추정 — 정확한 청구서 아님 (agent/usage.py 의 PRICES). 캐시 낭비는 agent-usage cache.")
+    return "\n".join(out)
 
 
 def cache_report(agg: dict, top: int | None = None) -> str:
@@ -219,15 +253,20 @@ def cache_report(agg: dict, top: int | None = None) -> str:
 
 def main(argv) -> int:
     cmd = argv[0] if argv else "cache"
-    if cmd not in ("cache",):
-        print(f"알 수 없는 명령: {cmd}  (지금은 cache 만)", file=sys.stderr)
+    if cmd not in ("cache", "daily", "projects"):
+        print(f"알 수 없는 명령: {cmd}  (cache · daily · projects)", file=sys.stderr)
         return 2
     root = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "projects"
     if not root.is_dir():
         print(f"{root} 없음", file=sys.stderr)
         return 1
-    agg = aggregate(scan([root]))
-    print(cache_report(agg, top=25))
+    recs = list(scan([root]))
+    if cmd == "cache":
+        print(cache_report(aggregate(recs), top=25))
+    elif cmd == "projects":
+        print(cost_report(aggregate(recs), "project", top=25))
+    elif cmd == "daily":
+        print(cost_report(aggregate(recs, key=lambda r: r.date or "?"), "date", top=30))
     return 0
 
 

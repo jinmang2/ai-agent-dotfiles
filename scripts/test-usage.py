@@ -70,30 +70,35 @@ class Counterfactual(unittest.TestCase):
 
 
 class Aggregate(unittest.TestCase):
+    def rec(self, proj, rid, usage, date="2026-09-05", model="claude-fable-5-1"):
+        return u.Rec(proj, rid, model, usage, date)
+
     def test_requestId_로_중복제거_마지막만(self):
-        recs = [
-            ("proj", "r1", "claude-fable-5-1", usage(out=1000)),   # 스트리밍 중간
-            ("proj", "r1", "claude-fable-5-1", usage(out=5000)),   # 최종 — 이것만
-            ("proj", "r2", "claude-fable-5-1", usage(out=2000)),
-        ]
+        recs = [self.rec("proj", "r1", usage(out=1000)),   # 스트리밍 중간
+                self.rec("proj", "r1", usage(out=5000)),   # 최종 — 이것만
+                self.rec("proj", "r2", usage(out=2000))]
         agg = u.aggregate(recs)
         self.assertEqual(agg["proj"]["tok"]["out"], 7000)  # 5000 + 2000, 1000 제외
 
     def test_프로젝트별로_나뉜다(self):
-        recs = [("a", "r1", "claude-fable-5-1", usage(cr=M)),
-                ("b", "r2", "claude-fable-5-1", usage(cr=M))]
+        recs = [self.rec("a", "r1", usage(cr=M)), self.rec("b", "r2", usage(cr=M))]
         agg = u.aggregate(recs)
         self.assertEqual(set(agg), {"a", "b"})
 
+    def test_날짜별로도_묶을_수_있다(self):
+        recs = [self.rec("a", "r1", usage(out=10), date="2026-09-04"),
+                self.rec("b", "r2", usage(out=20), date="2026-09-05"),
+                self.rec("a", "r3", usage(out=30), date="2026-09-05")]
+        agg = u.aggregate(recs, key=lambda r: r.date)
+        self.assertEqual(set(agg), {"2026-09-04", "2026-09-05"})
+        self.assertEqual(agg["2026-09-05"]["tok"]["out"], 50)  # 20 + 30
+
     def test_적중률은_생성을_분모에_넣는다(self):
-        # read=90, creation=9, fresh=1 → 90/(90+9+1)=0.9
-        recs = [("p", "r1", "claude-fable-5-1", usage(cr=90, cw1h=9, in_=1))]
-        agg = u.aggregate(recs)
+        agg = u.aggregate([self.rec("p", "r1", usage(cr=90, cw1h=9, in_=1))])
         self.assertAlmostEqual(u.hit_ratio(agg["p"]), 0.9, places=4)
 
     def test_절약은_반사실_빼기_실제(self):
-        recs = [("p", "r1", "claude-fable-5-1", usage(cr=M))]  # 실제 $0.25, 반사실 $10
-        agg = u.aggregate(recs)
+        agg = u.aggregate([self.rec("p", "r1", usage(cr=M))])  # 실제 $0.25, 반사실 $10
         self.assertAlmostEqual(u.savings(agg["p"]), 10.0 - 0.25, places=3)
 
 
@@ -106,7 +111,8 @@ class Scan(unittest.TestCase):
             f = proj / "s.jsonl"
             f.write_text("\n".join([
                 json.dumps({"type": "user", "message": {"role": "user", "content": "hi"}}),
-                json.dumps({"requestId": "r1", "message": {"role": "assistant",
+                json.dumps({"requestId": "r1", "timestamp": "2026-09-05T10:00:00Z",
+                            "message": {"role": "assistant",
                             "model": "claude-fable-5-1", "usage": usage(out=100)}}),
                 "not json",
             ]), encoding="utf-8")
@@ -116,7 +122,8 @@ class Scan(unittest.TestCase):
                 "message": {"role": "assistant", "model": "claude-fable-5-1", "usage": usage(out=50)}}), encoding="utf-8")
             recs = list(u.scan([pathlib.Path(d) / "projects"]))
             self.assertEqual(len(recs), 2)
-            self.assertEqual({r[0] for r in recs}, {"myrepo"}, "서브에이전트도 myrepo 로")
+            self.assertEqual({r.project for r in recs}, {"myrepo"}, "서브에이전트도 myrepo 로")
+            self.assertEqual(recs[0].rid, "r1")
 
 
 if __name__ == "__main__":

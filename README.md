@@ -45,7 +45,7 @@ agent/          두 도구가 공유하는 것
   guard.py           가드 훅 — 비밀값 노출·보호 경로 쓰기를 실행 전에 차단 (docs/guard.md)
   statusline         상태줄 진입점 — OMC HUD 를 부르고 wt 중복 제거 + 캐시·비용 줄 추가 (docs/hud.md)
   hud-cacheline.py   셋째 줄 — 프롬프트 캐시 남은 수명 + 세션 비용 (stdin 의 prompt_cache·cost)
-  usage.py           비용·캐시 집계 CLI — transcript 전체를 훑어 프로젝트별 (agent-usage cache)
+  usage.py           비용·캐시 집계 CLI — agent-usage cache · projects · daily
   label-of.sh        라벨 규칙 한 벌 (훅과 셸이 함께 source)
   profiles.conf      프로필 → 마커 표
 claude/         Claude Code 전용
@@ -70,7 +70,7 @@ scripts/
   test-guard.py           가드 훅의 판정 테스트 (51개)
   test-window-label.py    창 이름 훅 테스트 — 별도 tmux 서버에서 7개
   test-statusline.py      상태줄 래퍼 테스트 (wt 벗기기) 4개
-  test-hud-cacheline.py   캐시·비용 줄 테스트 9개
+  test-hud-cacheline.py   캐시·비용 줄 테스트 8개
   test-usage.py           비용·캐시 집계 테스트 14개
 docs/           레퍼런스
   hooks.md · guard.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
