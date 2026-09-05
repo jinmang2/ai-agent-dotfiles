@@ -2,30 +2,34 @@
 # 우리 상태줄 진입점.  claude/settings.json 의 statusLine 이 이걸 부른다.
 #
 # OMC HUD 를 그대로 부른다 — 사용량(5시간·주간·모델별)·컨텍스트·돌고 있는 에이전트·
-# 할 일·ralph 상태가 전부 OMC 렌더에서 나온다.  그 위에서 우리가 하는 일은 하나:
-# worktree 중복 표시 " (wt:...)" 를 벗긴다.
+# 할 일·ralph 상태가 전부 OMC 렌더에서 나온다.  그 위에서 우리가 두 가지를 얹는다:
+#   1. worktree 중복 표시 " (wt:...)" 를 벗긴다.
+#   2. 셋째 줄에 프롬프트 캐시 남은 수명 + 세션 비용을 붙인다 (agent-hud-cacheline).
+#      OMC 엔 이 요소가 없다.  stdin 의 prompt_cache·cost 를 읽어 만든다.
 #
-# 왜 벗기나:  Claude Code 네이티브 워크트리(.claude/worktrees/<이름>)는 워크트리 이름을
-# 브랜치와 똑같이 짓는다.  그래서 OMC 가 붙이는 "(wt:harness-persistence)" 는 바로 앞의
-# "branch:feat/harness-persistence" 를 되풀이할 뿐이고, 그 25칸이 좁은 창에서 줄을 밀어
+# 왜 wt 를 벗기나:  Claude Code 네이티브 워크트리(.claude/worktrees/<이름>)는 워크트리
+# 이름을 브랜치와 똑같이 짓는다.  그래서 OMC 가 붙이는 "(wt:harness-persistence)" 는 바로
+# 앞의 "branch:feat/harness-persistence" 를 되풀이할 뿐이고, 그 25칸이 좁은 창에서 줄을 밀어
 # 정작 중요한 사용량·컨텍스트 줄을 잘리게 만든다.  OMC 에는 이 조각만 끄는 설정이 없어서
 # (types.js 에 worktree 토글 없음) 출력에서 걷어낸다.  나머지 표시는 그대로 둔다.
 #
-# 시험: scripts/test-statusline.py
+# 시험: scripts/test-statusline.py · scripts/test-hud-cacheline.py
 
 HUD="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud"
+CACHELINE="$HOME/.local/bin/agent-hud-cacheline"
 ESC=$(printf '\033')  # BSD·GNU sed 모두에서 도는 리터럴 ESC (둘 다 \xNN 문법이 갈린다)
 
-# 캐시 래퍼가 stdin(Claude Code 페이로드)을 받아 렌더하고, 그 출력에서 `(wt:이름)` 을
-# 벗긴다.  캐시 스크립트가 없으면(새 머신에서 아직 복사 전) mjs 를 직접 부른다 —
-# install.sh 가 둘 다 채운다.  좁은 창에서는 OMC 가 sed 전에 `(wt:이름...` 처럼 먼저 잘라
-# 닫는 괄호가 없을 수 있으니, `)` 또는 줄 끝까지 지운다.  앞의 공백·색 코드도 함께.
+# stdin(Claude Code 페이로드)은 한 번만 읽을 수 있으니 담아 두고 둘에 나눠 준다 —
+# OMC 렌더와 우리 캐시·비용 줄.  그 합친 출력에서 `(wt:이름)` 을 벗긴다.  캐시 스크립트가
+# 없으면(새 머신에서 아직 복사 전) mjs 를 직접 부른다 — install.sh 가 채운다.  좁은 창에서는
+# OMC 가 sed 전에 `(wt:이름...` 처럼 먼저 잘라 닫는 괄호가 없을 수 있으니, `)` 또는 줄 끝까지
+# 지운다.  앞의 공백·색 코드도 함께.
+payload=$(cat)
 {
   if [ -f "$HUD/omc-hud-cache.sh" ]; then
-    sh "$HUD/omc-hud-cache.sh" "$HUD/omc-hud.mjs"
+    printf '%s' "$payload" | sh "$HUD/omc-hud-cache.sh" "$HUD/omc-hud.mjs"
   elif [ -f "$HUD/omc-hud.mjs" ]; then
-    node "$HUD/omc-hud.mjs"
-  else
-    cat >/dev/null  # HUD 가 아직 없다 — 빈 줄.  stdin 은 비워 준다.
+    printf '%s' "$payload" | node "$HUD/omc-hud.mjs"
   fi
+  [ -x "$CACHELINE" ] && printf '%s' "$payload" | "$CACHELINE"
 } | sed -E "s/ *(${ESC}\[[0-9;]*m)*\(wt:[^)]*(\)|\$)//g"

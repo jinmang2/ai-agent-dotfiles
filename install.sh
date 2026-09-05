@@ -35,6 +35,7 @@ LINKS=$(cat <<'LIST'
 agent/window-label.sh|$HOME/.local/bin/agent-window-label
 agent/guard.py|$HOME/.local/bin/agent-guard
 agent/statusline|$HOME/.local/bin/agent-statusline
+agent/hud-cacheline.py|$HOME/.local/bin/agent-hud-cacheline
 agent/profiles.conf|$HOME/.config/agent-profiles.conf
 agent/label-of.sh|$HOME/.config/agent-dotfiles/label-of.sh
 shell/agents.sh|$HOME/.config/agent-dotfiles/agents.sh

@@ -13,6 +13,7 @@ OMC 가 만들지만 **설정은 `claude/settings.json` 의 `omcHud` 키에 두�
     "omcLabel": false,       // [OMC#5.1.0L] 자기 라벨 — 버전은 install.sh --check 가 이미 본다
     "useBars": false,        // focused 가 켜는 [##] 막대 — 좁은 창에서 자리만 먹는다
     "contextBar": true,      // ctx:% 표시.  Claude Code 가 stdin 으로 주는 네이티브 값이라 정확하다
+    "showCallCounts": false, // T/A/S 누적 호출 수 — 셋째 줄을 캐시·비용으로 대체한다 (아래)
     "promptTime": false, "sessionHealth": false, "thinking": false,
     "activeSkills": false, "lastSkill": false,   // 이 넷은 줄만 늘려 잘림을 부른다
     "maxOutputLines": 8      // 기본 4 는 좁은 창에서 `... (+N lines)` 로 잘렸다
@@ -22,6 +23,25 @@ OMC 가 만들지만 **설정은 `claude/settings.json` 의 `omcHud` 키에 두�
 
 남긴 것: 브랜치 줄 · 모델 · **컨텍스트(ctx:%)** · 5h/주간/모델별 한도 · 호출 수 ·
 돌고 있는 에이전트(최대 3줄) · 할 일 · ralph.
+
+## 셋째 줄 — 캐시 남은 수명 + 비용 (우리가 붙인다)
+
+OMC 엔 없는 줄이다.  래퍼(`agent/statusline`)가 `agent-hud-cacheline` 을 불러 stdin 의
+`prompt_cache` 와 `cost` 로 만든다.  예: `cache 32m · $166`.
+
+- **`cache 32m`** — 워밍된 프롬프트 캐시가 식기까지 남은 시간(`prompt_cache.expires_at - now`).
+  색: 넉넉(초록) · 임박(노랑) · 3분 미만·만료(빨강 `cache cold`).  cold 가 되면 다음 메시지가
+  컨텍스트를 통째로 다시 읽는다(`recache_tokens_if_cold`, 수십만 토큰).  곧 자리를 비우거나
+  `/compact` 할 거면 이게 낮을 때 하면 추가 비용이 없다.
+- **`$166`** — 세션 누적 비용(`cost.total_cost_usd`).
+
+**이 타이머는 유휴 중에 줄어든다.**  Claude Code 는 유휴에도 상태줄을 주기적으로(약 300ms)
+다시 그리는데, 그동안 `expires_at` 은 마지막 요청(+1h)에 고정된 채 현재 시각만 흐른다.
+그래서 32m → … → cold 로 실제로 준다.  (컨텍스트가 얼마나 큰지는 `ctx:%` 가, 컴팩트할지
+말지의 핵심 방아쇠는 여전히 `ctx:%` 가 정한다 — 캐시 타이머는 "지금 하면 공짜인가" 를 본다.)
+
+다른 상태줄 도구들도 캐시를 띄우지만 대개 transcript 를 파싱하거나 훅으로 시각을 기록해
+추정한다.  우리는 `expires_at`·`ttl`·`hit_ratio` 가 stdin 에 네이티브로 와서 그럴 필요가 없다.
 
 **컨텍스트와 사용량은 Claude Code 가 stdin 으로 직접 준다.**  상태줄 명령의 stdin JSON 에
 `context_window.used_percentage` (컨텍스트)와 `rate_limits.five_hour/seven_day.used_percentage`

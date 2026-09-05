@@ -135,6 +135,7 @@
       "omcLabel": false,
       "useBars": false,
       "contextBar": true,
+      "showCallCounts": false,
       "promptTime": false,
       "sessionHealth": false,
       "thinking": false,

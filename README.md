@@ -43,7 +43,8 @@ source ~/.bashrc
 agent/          두 도구가 공유하는 것
   window-label.sh    tmux 창 이름 (Claude·Codex 공용)
   guard.py           가드 훅 — 비밀값 노출·보호 경로 쓰기를 실행 전에 차단 (docs/guard.md)
-  statusline         상태줄 진입점 — OMC HUD 를 부르고 worktree 중복(wt) 표시만 벗긴다 (docs/hud.md)
+  statusline         상태줄 진입점 — OMC HUD 를 부르고 wt 중복 제거 + 캐시·비용 줄 추가 (docs/hud.md)
+  hud-cacheline.py   셋째 줄 — 프롬프트 캐시 남은 수명 + 세션 비용 (stdin 의 prompt_cache·cost)
   label-of.sh        라벨 규칙 한 벌 (훅과 셸이 함께 source)
   profiles.conf      프로필 → 마커 표
 claude/         Claude Code 전용
@@ -68,6 +69,7 @@ scripts/
   test-guard.py           가드 훅의 판정 테스트 (51개)
   test-window-label.py    창 이름 훅 테스트 — 별도 tmux 서버에서 7개
   test-statusline.py      상태줄 래퍼 테스트 (wt 벗기기) 4개
+  test-hud-cacheline.py   캐시·비용 줄 테스트 9개
 docs/           레퍼런스
   hooks.md · guard.md · skills.md · subagents.md · plugins.md · machines.md · checklist.md
   hud.md                 스테이터스라인 원리 + omcHud 옵션 전체
@@ -86,6 +88,7 @@ local/          비공개 서브모듈 (jinmang2/ai-agent-dotfiles-local)
 | `agent/window-label.sh` | 심링크 | `~/.local/bin/agent-window-label` |
 | `agent/guard.py` | 심링크 | `~/.local/bin/agent-guard` |
 | `agent/statusline` | 심링크 | `~/.local/bin/agent-statusline` |
+| `agent/hud-cacheline.py` | 심링크 | `~/.local/bin/agent-hud-cacheline` |
 | `agent/profiles.conf` | 심링크 | `~/.config/agent-profiles.conf` |
 | `agent/label-of.sh` | 심링크 | `~/.config/agent-dotfiles/label-of.sh` |
 | `shell/agents.sh` | 심링크 | `~/.config/agent-dotfiles/agents.sh` |
@@ -181,6 +184,7 @@ tmux 설정과 훅과 셸은 이 지점에서 결합돼 있다.
 | `python3 scripts/test-guard.py` | 가드 훅 판정 테스트 |
 | `python3 scripts/test-window-label.py` | 창 이름 훅 테스트 (별도 tmux 소켓, 실제 창은 안 건드린다) |
 | `python3 scripts/test-statusline.py` | 상태줄 래퍼 테스트 (가짜 HUD 로 wt 벗기기 확인) |
+| `python3 scripts/test-hud-cacheline.py` | 캐시·비용 줄 판정 테스트 |
 
 ## 다중 계정
 
