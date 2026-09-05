@@ -2,8 +2,30 @@
 
 프롬프트 밑에 뜨는 막대다. 사용량·모델·컨텍스트·돌고 있는 에이전트를 보여준다.
 OMC 가 만들지만 **설정은 `claude/settings.json` 의 `omcHud` 키에 두므로 이
-저장소가 소유한다.** 지금은 기본값이 마음에 들어 키를 비워 뒀다. 넣는 순간
-모든 머신에 그대로 간다.
+저장소가 소유한다.** 넣는 순간 모든 머신에 그대로 간다.
+
+지금 값 (2026-09-05, OMC 5.1.0):
+
+```jsonc
+"omcHud": {
+  "preset": "focused",
+  "elements": {
+    "useBars": false,        // 5.1.0 부터 focused 프리셋이 막대를 켠다 — 좁은 창에서 자리만 먹는다
+    "contextBar": false,     // transcript 기반 ctx 가 0% 로 굳어 있었다. Claude Code 자체 표시가 있다
+    "promptTime": false, "sessionHealth": false, "thinking": false,
+    "activeSkills": false, "lastSkill": false,
+    "maxOutputLines": 6      // 기본 4 는 좁은 창에서 `... (+3 lines)` 로 잘렸다
+  }
+}
+```
+
+남긴 것: 브랜치 줄 · 모델 · 5h/주간/모델별 한도 · 호출 수 · 돌고 있는 에이전트(최대 3줄).
+
+**좁은 창에서 줄이 갈리는 이유.** `maxWidth` 를 안 주면 OMC 가 터미널 폭을 재고
+`wrapMode` 를 `truncate` 에서 `wrap` 으로 **스스로 바꾼다** (`dist/hud/index.js`). 그래서
+메인 줄이 ` | ` 경계마다 갈라져 여러 줄이 되고, 그 다음 `maxOutputLines` 가 뒤를 자른다.
+`wrapMode: "truncate"` 를 명시해도 같은 코드가 다시 `wrap` 으로 바꾸므로 소용없다.
+줄 수를 줄이는 방법은 요소를 빼는 것뿐이다.
 
 ## 어떻게 그려지나
 
@@ -111,7 +133,7 @@ diff 를 확인하고 커밋해야 한다.
 | `hostname` | `false` | **머신 이름 — 다중 머신 · ssh 에 유용** |
 | `showTokens` | `false` | 마지막 요청 토큰 (`tok:i1.2k/o340`) |
 | `showLastTool` | `false` | 마지막 도구 이름 |
-| `useBars` | `false` | 퍼센트 대신 막대 게이지 |
+| `useBars` | `false` (**5.1.0 의 focused·full·dense 프리셋은 `true`**) | 퍼센트 대신 막대 게이지 |
 | `missionBoard` | `false` | 전체 실행 진척 보드 (별도 줄) |
 | `sessionSummary` | `false` | AI 세션 요약. **10턴마다 `claude -p` 를 부르므로 비용이 든다** |
 | `apiKeySource` | `false` | API 키 출처 (project/global/env) |
@@ -130,7 +152,7 @@ diff 를 확인하고 커밋해야 한다.
 | `gitInfoPosition` | `above` | `above` `below` |
 | `thinkingFormat` | `text` | `bubble` `brain` `face` `text` |
 | `callCountsFormat` | `auto` | `auto` `emoji` `ascii` |
-| `maxOutputLines` | `4` | 전체 출력 줄 수 상한 (입력창이 줄어드는 걸 막는다) |
+| `maxOutputLines` | `4` (minimal 2 · full 12 · dense 6) | 전체 출력 줄 수 상한 (입력창이 줄어드는 걸 막는다). 넘치면 `... (+N lines)` |
 
 ## 그 밖의 최상위 키
 

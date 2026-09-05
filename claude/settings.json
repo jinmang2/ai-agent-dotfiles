@@ -129,6 +129,19 @@
       }
     ]
   },
+  "omcHud": {
+    "preset": "focused",
+    "elements": {
+      "useBars": false,
+      "contextBar": false,
+      "promptTime": false,
+      "sessionHealth": false,
+      "thinking": false,
+      "activeSkills": false,
+      "lastSkill": false,
+      "maxOutputLines": 6
+    }
+  },
   "statusLine": {
     "type": "command",
     "command": "sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud-cache.sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs"
