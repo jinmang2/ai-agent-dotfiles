@@ -118,9 +118,10 @@ HEREDOC = re.compile(
 INTERP_CODE = re.compile(
     r"\b(?:python[\d.]*|node|ruby|perl)\b[^\n|;&]*?\s-[ce]\s+(?P<code>'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\")"
 )
-# 셸의 `-c '…'` 와 ssh 의 원격 명령은 안쪽이 그대로 셸 명령이다 — 풀어서 다시 판정한다.
+# 셸의 `-c '…'` · `eval '…'` · here-string · ssh 의 원격 명령은 안쪽이 그대로 셸 명령이다 —
+# 풀어서 다시 판정한다.
 SHELL_CODE = re.compile(
-    r"(?:\b(?:bash|sh|zsh|dash|ksh)\b[^\n|;&]*?\s-[a-z]*c\s+|\bssh\b[^\n|;&]*?\s)"
+    r"(?:\b(?:bash|sh|zsh|dash|ksh)\b[^\n|;&]*?\s-[a-z]*c\s+|\beval\s+|<<<\s*|\bssh\b[^\n|;&]*?\s)"
     r"(?P<code>'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\")"
 )
 # 따옴표 속이 경로 하나인가 — 공백도 정규식·글롭 문자도 없다. `'\.env|\.key'` 는 패턴이다.

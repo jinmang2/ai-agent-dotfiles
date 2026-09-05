@@ -73,8 +73,8 @@
   `grep -E 'a|\.env'` 의 `|` 에서 갈려 `\.env` 조각이 걸렸다.
 - **변수를 따라간다.** `f=.env.local; cat $f` · `ENVF=.env.local bash -c 'cat $ENVF'` ·
   `for f in .env; do cat $f` 는 막고, `for f in .env; do [ -f $f ]` 는 통과한다. source 한 뒤 맨 `env`
-  `printenv` `export -p` `set` 은 막는다. `bash -c` · `sh -c` · `ssh host` 의 따옴표 본문은 안쪽 명령으로
-  다시 판정한다 — 셸이라 코드 예외를 주지 않는다.
+  `printenv` `export -p` `set` 은 막는다. `bash -c` · `sh -c` · `eval` · here-string(`<<<`) · `ssh host` 의
+  따옴표 본문은 안쪽 명령으로 다시 판정한다 — 셸이라 코드 예외를 주지 않는다.
 
 ### 받아들인 잔여 위험
 

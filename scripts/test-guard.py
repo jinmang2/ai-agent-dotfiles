@@ -268,6 +268,15 @@ class SecretsBlocked(GuardCase):
         ):
             self.assertBlocked(bash(cmd), cwd=self.bare, msg=cmd)
 
+    def test_eval_과_here_string_도_셸_명령이다(self):
+        for cmd in (
+            'eval "cat .env.local"',
+            "eval 'cat .env.local'",
+            'command eval "cat .env.local"',
+            'bash <<< "cat .env.local"',
+        ):
+            self.assertBlocked(bash(cmd), cwd=self.bare, msg=cmd)
+
     def test_git_log_은_패치를_찍으면_내용이_흐른다(self):
         self.assertBlocked(bash("git log -p -- .env.local"), cwd=self.bare)
         self.assertBlocked(bash("git log -1 --patch certs/server.key"), cwd=self.bare)

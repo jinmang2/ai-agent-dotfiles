@@ -76,6 +76,50 @@ class WindowLabel(unittest.TestCase):
         self.hook("busy", None)
         self.assertEqual(self.name(), "ai-agent-dotfiles")
 
+    def test_5_임시_디렉토리에서_ccname_은_여전히_이름을_붙인다(self):
+        # shell/agents.sh 의 ccname: @cc_label 을 심고 상태 없이 훅을 부른다
+        tmux("set", "-w", "-t", self.pane, "@cc_label", "결제-마이그레이션")
+        nested = tempfile.mkdtemp(prefix="tmp")
+        try:
+            self.hook("", nested)
+            self.assertEqual(self.name(), "결제-마이그레이션")
+        finally:
+            os.rmdir(nested)
+            tmux("set", "-w", "-t", self.pane, "-u", "@cc_label")
+            self.hook("busy", str(REPO))
+
+    def test_6_macOS_의_TMPDIR_는_끝에_슬래시가_붙어_와도_임시_루트다(self):
+        self.hook("busy", str(REPO))
+        # /tmp 밖에 두어야 /tmp/* 패턴이 아니라 TMPDIR 규칙이 시험된다
+        root = pathlib.Path.home() / ".cache" / "agent-dotfiles-test" / "T"
+        nested = root / "tmpabc"
+        nested.mkdir(parents=True, exist_ok=True)
+        try:
+            env = {**self.env, "TMPDIR": str(root) + "/"}
+            subprocess.run([str(HOOK), "", "done"], input=f'{{"cwd":"{nested}"}}', env=env,
+                           capture_output=True, text=True, check=False)
+            self.assertEqual(self.cc(), "busy", "TMPDIR 끝의 슬래시 때문에 중첩 세션을 놓치면 안 된다")
+            env.pop("TMPDIR")
+            mac = pathlib.Path.home() / ".cache" / "agent-dotfiles-test" / "var" / "folders" / "qr" / "T" / "tmpx"
+            mac.mkdir(parents=True, exist_ok=True)
+            payload = '{"cwd":"/private/var/folders/qr/T/tmpx"}'  # macOS 가 TMPDIR 없이 주는 모양
+            subprocess.run([str(HOOK), "", "done"], input=payload, env=env,
+                           capture_output=True, text=True, check=False)
+            self.assertEqual(self.cc(), "busy", "/private/var/folders 도 임시 루트다")
+        finally:
+            import shutil
+            shutil.rmtree(pathlib.Path.home() / ".cache" / "agent-dotfiles-test", ignore_errors=True)
+
+    def test_7_cwd_가_뒤에_또_나와도_맨_앞_것을_쓴다(self):
+        nested = tempfile.mkdtemp(prefix="tmp")
+        try:
+            payload = f'{{"cwd":"{nested}","tool_response":{{"cwd":"{REPO}"}}}}'
+            subprocess.run([str(HOOK), "", "done"], input=payload, env=self.env,
+                           capture_output=True, text=True, check=False)
+        finally:
+            os.rmdir(nested)
+        self.assertEqual(self.cc(), "busy", "뒤에 나온 cwd 가 앞의 것을 덮으면 임시 판정이 뚫린다")
+
     def test_4_세션이_끝나면_done_이_남는다(self):
         self.hook("busy", str(REPO))
         self.hook("done", str(REPO))

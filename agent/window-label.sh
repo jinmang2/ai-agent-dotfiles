@@ -32,8 +32,9 @@ state="${2:-}"
 command -v tmux >/dev/null 2>&1 || exit 0
 
 payload=$(cat 2>/dev/null)
-payload_cwd=$(printf '%s' "$payload" \
-  | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+# 맨 앞의 "cwd" 만 본다 — 뒤에 중첩된 같은 이름의 키(tool_response 등)가 이기면 안 된다.
+payload_cwd=$(printf '%s' "$payload" | grep -o '"cwd"[[:space:]]*:[[:space:]]*"[^"]*"' \
+  | head -1 | sed 's/.*:[[:space:]]*"\([^"]*\)"$/\1/')
 
 # --- 임시 디렉토리에서 도는 세션은 이 창의 주인이 아니다 ---
 # 에이전트가 도구 안에서 `claude -p` 를 다시 띄우면(pipespec 의 CLI 어댑터가
@@ -42,9 +43,15 @@ payload_cwd=$(printf '%s' "$payload" \
 # 도는데 ✓ 를 찍는다.  임시 루트 아래의 cwd 는 통째로 무시한다 — 이름도 상태도.
 # 대가: 스크래치패드 워크트리(/tmp/claude-…)에서 도는 정상 세션은 라벨이 셸의 cwd
 # (바깥 저장소 이름)로 남는다.  임시 디렉토리 이름이 뜨는 것보다 낫다.
-case "$payload_cwd" in
-  "${TMPDIR:-/tmp}"/*|/tmp/*|/var/tmp/*|/private/tmp/*) exit 0 ;;
-esac
+# 상태 없는 호출(ccname)은 셸이 부르는 것이라 예외다 — /tmp 에서 ccname 을 쳐도 붙어야 한다.
+# macOS 의 TMPDIR 은 /var/folders/…/T/ 처럼 끝에 슬래시가 붙어 오고, 없을 땐
+# /private/var/folders 로 온다.
+tmp_root=${TMPDIR:-/tmp}; tmp_root=${tmp_root%/}
+if [ -n "$state" ]; then
+  case "$payload_cwd" in
+    "$tmp_root"/*|/tmp/*|/var/tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*) exit 0 ;;
+  esac
+fi
 
 # --- 조기 탈출: 이미 같은 상태면 아무것도 하지 않는다 ---
 # PostToolUse 는 도구 호출마다 불리므로, 연타되는 경우 tmux show 한 번으로 끝낸다.

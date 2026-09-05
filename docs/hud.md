@@ -4,13 +4,13 @@
 OMC 가 만들지만 **설정은 `claude/settings.json` 의 `omcHud` 키에 두므로 이
 저장소가 소유한다.** 넣는 순간 모든 머신에 그대로 간다.
 
-지금 값 (2026-09-05, OMC 5.1.0):
+지금 값 (2026-09-05, OMC 4.14.5 ~ 5.1.0 에서 동일):
 
 ```jsonc
 "omcHud": {
   "preset": "focused",
   "elements": {
-    "useBars": false,        // 5.1.0 부터 focused 프리셋이 막대를 켠다 — 좁은 창에서 자리만 먹는다
+    "useBars": false,        // 기본 프리셋 focused 가 막대를 켠다 (4.14.5 이래) — 좁은 창에서 자리만 먹는다
     "contextBar": false,     // transcript 기반 ctx 가 0% 로 굳어 있었다. Claude Code 자체 표시가 있다
     "promptTime": false, "sessionHealth": false, "thinking": false,
     "activeSkills": false, "lastSkill": false,
@@ -133,7 +133,7 @@ diff 를 확인하고 커밋해야 한다.
 | `hostname` | `false` | **머신 이름 — 다중 머신 · ssh 에 유용** |
 | `showTokens` | `false` | 마지막 요청 토큰 (`tok:i1.2k/o340`) |
 | `showLastTool` | `false` | 마지막 도구 이름 |
-| `useBars` | `false` (**5.1.0 의 focused·full·dense 프리셋은 `true`**) | 퍼센트 대신 막대 게이지 |
+| `useBars` | `false` — **단 focused·full·dense 프리셋이 `true` 로 덮는다.** 기본 프리셋이 focused 라 사실상 켜져 있다 | 퍼센트 대신 막대 게이지 |
 | `missionBoard` | `false` | 전체 실행 진척 보드 (별도 줄) |
 | `sessionSummary` | `false` | AI 세션 요약. **10턴마다 `claude -p` 를 부르므로 비용이 든다** |
 | `apiKeySource` | `false` | API 키 출처 (project/global/env) |
