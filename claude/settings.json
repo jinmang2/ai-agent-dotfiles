@@ -133,18 +133,18 @@
     "preset": "focused",
     "elements": {
       "useBars": false,
-      "contextBar": false,
+      "contextBar": true,
       "promptTime": false,
       "sessionHealth": false,
       "thinking": false,
       "activeSkills": false,
       "lastSkill": false,
-      "maxOutputLines": 6
+      "maxOutputLines": 8
     }
   },
   "statusLine": {
     "type": "command",
-    "command": "sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud-cache.sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs"
+    "command": "\"$HOME\"/.local/bin/agent-statusline"
   },
   "enabledPlugins": {
     "oh-my-claudecode@omc": true,

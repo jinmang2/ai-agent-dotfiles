@@ -434,7 +434,7 @@
     <h1>에이전트 도트파일 해부도</h1>
     <p class="standfirst">tmux 창 이름이 어떻게 결정되고 누가 그것을 소유하는지, 훅이 언제 왜 도는지, 계정 두 개가 어떻게 격리되면서도 2.2G를 나눠 쓰는지, 그리고 저장소에 무엇을 담고 무엇을 왜 뺐는지.</p>
     <div class="meta">
-      <span><b>추적 파일</b> 38개</span>
+      <span><b>추적 파일</b> 40개</span>
       <span><b>훅</b> 9개 · <b>플러그인</b> 6개</span>
       <span><b>공유</b> skills 1.5G · plugins 678M</span>
       <span><b>도구</b> Claude · Codex · Gemini · tmux · 셸</span>
@@ -493,7 +493,7 @@
           <line x1="34" y1="186" x2="250" y2="186" stroke="currentColor" stroke-width="1" opacity="0.25"/>
           <text x="34" y="210" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity="0.7">install.sh  scripts/</text>
           <text x="34" y="232" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" opacity="0.7">docs/  README.md</text>
-          <text x="34" y="256" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.6">실체 · 추적 파일 38개</text>
+          <text x="34" y="256" font-family="IBM Plex Sans KR, sans-serif" font-size="11.5" fill="currentColor" opacity="0.6">실체 · 추적 파일 40개</text>
 
           <!-- local (비공개) -->
           <text x="16" y="300" font-family="IBM Plex Mono, monospace" font-size="10.5" class="t-a" letter-spacing="1.2">GIT · 비공개 서브모듈</text>
@@ -578,7 +578,7 @@
             <tr><td><code>effortLevel</code></td><td><code>high</code></td><td>추론 강도</td></tr>
             <tr><td><code>permissions.allow</code></td><td>18줄</td><td>읽기 전용 조회만 (<code>git status</code>, <code>gh pr view</code>, <code>df -h</code> …). 쓰는 명령은 한 줄도 없다</td></tr>
             <tr><td><code>hooks</code></td><td>6개 이벤트 · 훅 9개</td><td>§3</td></tr>
-            <tr><td><code>statusLine</code></td><td><code>omc-hud-cache.sh</code></td><td>OMC HUD — 사용량·모델·에이전트</td></tr>
+            <tr><td><code>statusLine</code></td><td><code>agent-statusline</code></td><td>우리 래퍼가 OMC HUD 를 부르고 worktree 중복(wt) 표시만 벗긴다 (docs/hud.md)</td></tr>
             <tr><td><code>omcHud</code></td><td>focused − 막대·ctx·시각·세션·스킬</td><td>HUD 요소 선택. 기본 프리셋 focused 가 막대를 켜고 4줄에서 자르길래 저장소가 값을 쥔다 (docs/hud.md)</td></tr>
             <tr><td><code>enabledPlugins</code></td><td>6개</td><td>새 머신에서 <em>자동 설치됨</em></td></tr>
             <tr><td><code>extraKnownMarketplaces</code></td><td>4곳</td><td>위 플러그인의 출처 등록</td></tr>

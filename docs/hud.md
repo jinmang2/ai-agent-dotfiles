@@ -4,22 +4,38 @@
 OMC 가 만들지만 **설정은 `claude/settings.json` 의 `omcHud` 키에 두므로 이
 저장소가 소유한다.** 넣는 순간 모든 머신에 그대로 간다.
 
-지금 값 (2026-09-05, OMC 4.14.5 ~ 5.1.0 에서 동일):
+지금 값 (2026-09-05):
 
 ```jsonc
 "omcHud": {
   "preset": "focused",
   "elements": {
-    "useBars": false,        // 기본 프리셋 focused 가 막대를 켠다 (4.14.5 이래) — 좁은 창에서 자리만 먹는다
-    "contextBar": false,     // transcript 기반 ctx 가 0% 로 굳어 있었다. Claude Code 자체 표시가 있다
+    "useBars": false,        // focused 가 켜는 [##] 막대 — 좁은 창에서 자리만 먹는다
+    "contextBar": true,      // ctx:% 표시.  Claude Code 가 stdin 으로 주는 네이티브 값이라 정확하다
     "promptTime": false, "sessionHealth": false, "thinking": false,
-    "activeSkills": false, "lastSkill": false,
-    "maxOutputLines": 6      // 기본 4 는 좁은 창에서 `... (+3 lines)` 로 잘렸다
+    "activeSkills": false, "lastSkill": false,   // 이 넷은 줄만 늘려 잘림을 부른다
+    "maxOutputLines": 8      // 기본 4 는 좁은 창에서 `... (+N lines)` 로 잘렸다
   }
 }
 ```
 
-남긴 것: 브랜치 줄 · 모델 · 5h/주간/모델별 한도 · 호출 수 · 돌고 있는 에이전트(최대 3줄).
+남긴 것: 브랜치 줄 · 모델 · **컨텍스트(ctx:%)** · 5h/주간/모델별 한도 · 호출 수 ·
+돌고 있는 에이전트(최대 3줄) · 할 일 · ralph.
+
+**컨텍스트와 사용량은 Claude Code 가 stdin 으로 직접 준다.**  상태줄 명령의 stdin JSON 에
+`context_window.used_percentage` (컨텍스트)와 `rate_limits.five_hour/seven_day.used_percentage`
+(사용량)가 들어온다 — transcript 를 파싱하거나 사용량 API 를 폴링할 필요가 없다.  OMC 의
+`contextBar` 는 이 네이티브 값을 읽으므로 정확하다.  모델별 주간 버킷(`fable:`)만은 stdin
+에 없어서 OMC 가 사용량 API 로 따로 가져온다.
+
+## worktree 표시 (wt) 를 벗기는 이유
+
+Claude Code 네이티브 워크트리(`.claude/worktrees/<이름>`)는 워크트리 이름을 브랜치와 똑같이
+짓는다.  그래서 OMC 가 붙이는 `branch:feat/x (wt:x)` 의 `(wt:x)` 는 바로 앞 브랜치를
+되풀이할 뿐이고, 그 20여 칸이 좁은 창에서 줄을 밀어 사용량·컨텍스트 줄을 잘리게 한다.
+OMC 에는 이 조각만 끄는 설정이 없어(`types.js` 에 worktree 토글 없음), 래퍼(`agent/statusline`)
+가 출력에서 `(wt:...)` 를 정규식으로 걷어낸다.  좁은 창에서 OMC 가 먼저 잘라 닫는 괄호가
+없을 때(`(wt:x...`)도 줄 끝까지 지운다.  `scripts/test-statusline.py` 가 이걸 고정한다.
 
 **좁은 창에서 줄이 갈리는 이유.** `maxWidth` 를 안 주면 OMC 가 터미널 폭을 재고
 `wrapMode` 를 `truncate` 에서 `wrap` 으로 **스스로 바꾼다** (`dist/hud/index.js`). 그래서
@@ -34,12 +50,15 @@ Claude Code 의 `statusLine` 설정은 계약이 아주 단순하다. 렌더할 
 `version`)을 밀어넣은 뒤, **stdout 을 그대로 막대로 그린다.** 그게 전부다.
 명령이 없거나 실패해서 stdout 이 비면 경고 없이 빈 줄이 된다.
 
-우리 `settings.json` 의 명령은 이것이다:
+우리 `settings.json` 의 명령은 **우리 래퍼**다 (`agent/statusline` → `~/.local/bin/agent-statusline`):
 
 ```
-sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud-cache.sh \
-   ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs
+"$HOME"/.local/bin/agent-statusline
 ```
+
+래퍼가 OMC 캐시 스크립트를 그대로 부르므로 사용량·컨텍스트·에이전트·할 일·ralph 표시는
+전부 OMC 렌더에서 나온다.  래퍼가 그 위에서 하는 일은 하나 — worktree 중복 표시
+`(wt:...)` 를 벗긴다 (아래 「worktree 표시」).
 
 - `omc-hud.mjs` — 얇은 로더. OMC dist 를 플러그인 루트 → 플러그인 캐시 →
   마켓플레이스 클론 → npm 전역 순으로 찾아 렌더를 호출한다.

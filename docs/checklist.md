@@ -31,6 +31,7 @@ claude                                          # 3. 플러그인 자동 설치 
 | `python3 scripts/test-merge-settings.py` | 28개 통과 |
 | `python3 scripts/test-guard.py` | 51개 통과 |
 | `python3 scripts/test-window-label.py` | 7개 통과 (tmux 필요) |
+| `python3 scripts/test-statusline.py` | 4개 통과 |
 | `echo '{"tool_name":"Bash","tool_input":{"command":"cat .env.local"}}' \| agent-guard; echo $?` | `2` (가드 훅이 산다) |
 
 창 이름이 안 붙으면 tmux 밖이거나 `automatic-rename` 이 켜져 있는 것이다.
