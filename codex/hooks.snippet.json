@@ -4,14 +4,27 @@
     "그대로 덮어쓰지 말 것 — 기존 OMX 훅과 신뢰 상태가 이미 들어있다.",
     "적용 절차는 codex/README.md 참고. 적용 후 Codex 에서 /hooks 로 신뢰 승인 필요."
   ],
+  "SessionStart": [
+    { "matcher": "startup|resume|clear|compact", "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-memory-hook recall", "timeout": 6, "statusMessage": "Recalling memory" } ] },
+    { "matcher": "startup|resume|clear", "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-codex-hud-launcher >/dev/null", "timeout": 3 } ] }
+  ],
   "UserPromptSubmit": [
-    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy" } ] }
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy" } ] },
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-memory-hook recall_prompt", "timeout": 6, "statusMessage": "Recalling prompt memory" } ] },
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-memory-hook capture", "async": true, "timeout": 6 } ] }
   ],
   "PermissionRequest": [
     { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ❓ waiting" } ] }
   ],
   "PostToolUse": [
     { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ⏳ busy" } ] }
+  ],
+  "PreCompact": [
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-memory-hook preserve", "timeout": 30, "statusMessage": "Preserving memory" } ] }
+  ],
+  "SessionEnd": [
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-memory-hook distill", "timeout": 3, "statusMessage": "Distilling memory" } ] },
+    { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-codex-hud-launcher --stop >/dev/null", "timeout": 3 } ] }
   ],
   "Stop": [
     { "hooks": [ { "type": "command", "command": "\"$HOME\"/.local/bin/agent-window-label ✅ done" } ] }

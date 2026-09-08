@@ -232,7 +232,49 @@ claude() {
 # 다만 Codex 에는 CLAUDE_CONFIG_DIR 같은 단서가 없어서 프로필을 유도할 방법이 없다.
 # 안 걸어주면 window-label.sh 의 기본값 claude 로 떨어져 Codex 창 번호가 파랑
 # (개인 Claude)이 된다 — 도구를 구분하려고 만든 표시가 거짓말을 하게 된다.
-codex() { AGENT_PROFILE="${AGENT_PROFILE:-codex}" command codex "$@"; }
+codex() {
+  local profile="${AGENT_PROFILE:-codex}" launcher="$HOME/.local/bin/agent-codex-hud-launcher"
+  local status arg skip_next=0
+
+  if [ "${CODEX_HUD:-1}" != "0" ] \
+    && [ "${CODEX_COMPANION_HUD_ACTIVE:-}" != "1" ] \
+    && [ -t 0 ] && [ -t 1 ] \
+    && [ -n "${TMUX_PANE:-}" ] \
+    && [ -x "$launcher" ]; then
+    for arg in "$@"; do
+      if [ "$skip_next" -eq 1 ]; then
+        skip_next=0
+        continue
+      fi
+      case "$arg" in
+        -h|--help|-V|--version|help|e|review|doctor|agents|plugin|mcp|mcp-server|app-server|remote-control|update|sandbox|exec|exec-server|queue|archive|delete|migrate-rollouts|unarchive|login|logout|auth|completion|debug|proto|apply|cloud)
+          launcher=""
+          break
+          ;;
+        -c|-m|--config|--model|--profile|--cd|--sandbox|--approval-policy)
+          skip_next=1
+          ;;
+      esac
+    done
+  else
+    launcher=""
+  fi
+
+  if [ -n "$launcher" ]; then
+    AGENT_PROFILE="$profile" "$launcher" </dev/null >/dev/null 2>&1 || true
+  fi
+
+  if AGENT_PROFILE="$profile" command codex "$@"; then
+    status=0
+  else
+    status=$?
+  fi
+
+  if [ -n "$launcher" ]; then
+    "$launcher" --stop </dev/null >/dev/null 2>&1 || true
+  fi
+  return "$status"
+}
 
 # ── 창 이름: 셸이 주인일 때 ──────────────────────────────────────────────
 # 에이전트가 그 창을 떠났다는 이벤트는 없다. Claude Code 의 Stop 훅은 턴 끝에

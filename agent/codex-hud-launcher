@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SELF="$(readlink -f -- "${BASH_SOURCE[0]}")"
+DIR="$(cd -- "$(dirname -- "$SELF")" && pwd)"
+action=start
+parent="${TMUX_PANE:-}"
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --stop|--setup|--refresh|--popup|--dry-run) action=${1#--} ;;
+    --pane) shift; parent=${1:?missing pane} ;;
+    --help|-h) echo 'usage: agent-codex-hud-launcher [--stop | --setup | --refresh | --popup | --dry-run] [--pane %ID]'; exit 0 ;;
+    *) echo 'codex-hud-launcher: unknown option' >&2; exit 2 ;;
+  esac
+  shift
+done
+
+setup_status() {
+  tmux wait-for -L codex-hud-setup
+  trap 'tmux wait-for -U codex-hud-setup 2>/dev/null || true' EXIT
+  if [ "$(tmux show-option -gqv @codex_hud_installed)" != 1 ]; then
+    tmux set-option -gq @codex_hud_tabs "$(tmux show-option -gqv 'status-format[0]')"
+    tmux set-option -gq 'status-format[1]' "$(tmux show-option -gqv @codex_hud_tabs)"
+    tmux set-option -gq 'status-format[0]' "#{?@codex_hud_active,#(python3 '$DIR/codex-hud.py' --status --pane #{pane_id} --width #{client_width}),#{E:@codex_hud_tabs}}"
+    tmux set-option -gq @codex_hud_installed 1
+  fi
+  tmux bind-key h run-shell "\"$SELF\" --popup --pane '#{pane_id}'"
+  for event in after-select-pane after-select-window session-window-changed client-session-changed; do
+    tmux set-hook -g "$event[90]" "run-shell -b '\"$SELF\" --refresh --pane #{pane_id}'"
+  done
+  tmux wait-for -U codex-hud-setup
+  trap - EXIT
+}
+
+refresh_status() {
+  local session active height=on
+  session=$(tmux display-message -p -t "$parent" '#{session_id}' 2>/dev/null) || return 0
+  active=$(tmux display-message -p -t "$session" '#{pane_id}')
+  [ "$(tmux show-option -pqv -t "$active" @codex_hud_active)" != 1 ] || height=2
+  tmux set-option -q -t "$session" status "$height"
+  tmux refresh-client -S 2>/dev/null || true
+}
+
+if [ "$action" = setup ]; then
+  setup_status
+  exit 0
+fi
+[ -n "$parent" ] || exit 0
+[[ "$parent" =~ ^%[0-9]+$ ]] || { echo 'codex-hud-launcher: invalid pane' >&2; exit 2; }
+tmux display-message -p -t "$parent" '#{pane_id}' >/dev/null 2>&1 || exit 0
+
+case "$action" in
+  refresh) refresh_status; exit 0 ;;
+  popup)
+    tmux display-popup -E -w 90% -h 80% -T 'Codex details | q: close' -d "$(tmux display-message -p -t "$parent" '#{pane_current_path}')" \
+      "python3 '$DIR/codex-hud.py' --detail --pane '$parent' | less -R"
+    exit 0 ;;
+  dry-run) printf 'fixed tmux status row for %s; no split\n' "$parent"; exit 0 ;;
+esac
+
+[ "${CODEX_COMPANION_HUD_ACTIVE:-}" != 1 ] || exit 0
+[ "$action" = stop ] || [ "${CODEX_HUD:-1}" != 0 ] || exit 0
+identity=()
+if [ ! -t 0 ]; then
+  mapfile -t identity < <(node -e '
+    let input=""; process.stdin.setEncoding("utf8");
+    process.stdin.on("data", chunk => { if(input.length < 1048576) input += chunk; });
+    process.stdin.on("end", () => {
+      let value; try { value=JSON.parse(input); } catch { return; }
+      if (!value || typeof value.session_id !== "string" || !/^[a-f0-9-]{36}$/i.test(value.session_id)) return;
+      console.log(value.session_id);
+      if (typeof value.transcript_path === "string" && !/[\x00-\x1f\x7f]/.test(value.transcript_path)) console.log(value.transcript_path);
+    });')
+fi
+bound=$(tmux show-option -pqv -t "$parent" @codex_hud_session)
+if [ "$action" = stop ] && [ -n "${identity[0]:-}" ] && [ -n "$bound" ] && [ "$bound" != "${identity[0]}" ]; then
+  exit 0
+fi
+
+# Migration removes only the old companion pane whose ownership marker matches.
+option="@codex_hud_pane_${parent//[^A-Za-z0-9]/_}"
+legacy=$(tmux show-option -gqv "$option")
+if [ -n "$legacy" ] && [ "$(tmux show-option -pqv -t "$legacy" @codex_hud_parent 2>/dev/null || true)" = "$parent" ]; then
+  tmux kill-pane -t "$legacy"
+fi
+tmux set-option -gu "$option" 2>/dev/null || true
+
+if [ "$action" = stop ]; then
+  for key in active session transcript home; do
+    tmux set-option -pu -t "$parent" "@codex_hud_$key" 2>/dev/null || true
+  done
+else
+  setup_status
+  tmux set-option -pq -t "$parent" @codex_hud_active 1
+  tmux set-option -pq -t "$parent" @codex_hud_home "${CODEX_HOME:-$HOME/.codex}"
+  if [ -n "${identity[0]:-}" ]; then
+    tmux set-option -pq -t "$parent" @codex_hud_session "${identity[0]}"
+    tmux set-option -pq -t "$parent" @codex_hud_transcript "${identity[1]:-}"
+  fi
+fi
+refresh_status

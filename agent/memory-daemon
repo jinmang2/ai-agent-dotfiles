@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export AGMEM_CONFIG="${AGMEM_CONFIG:-$HOME/.agmem/agmem.toml}"
+export AGMEM_NAMESPACE="${AGMEM_NAMESPACE:-main}"
+memory_python="${AGMEM_PYTHON:-$HOME/agentic_memory/.venv/bin/python}"
+exec "$memory_python" -m agmem.mcp.server \
+  --transport http --host 127.0.0.1 --port 8765 \
+  --organizers experience --idle-timeout 0 "$@"

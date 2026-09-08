@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+case "${1:-}" in
+  --help|-h)
+    printf 'Usage: agent-memory-hook recall|recall_prompt|capture|preserve|distill\n'
+    printf 'Uses AGMEM_PYTHON and AGMEM_CONFIG; defaults to the local agentic_memory installation.\n'
+    exit 0 ;;
+  recall|recall_prompt|capture|preserve|distill) hook=$1 ;;
+  *) printf 'agent-memory-hook: unknown hook\n' >&2; exit 2 ;;
+esac
+
+export AGMEM_CONFIG="${AGMEM_CONFIG:-$HOME/.agmem/agmem.toml}"
+export AGMEM_DAEMON_URL="${AGMEM_DAEMON_URL:-http://127.0.0.1:8765}"
+export AGMEM_NAMESPACE="${AGMEM_NAMESPACE:-main}"
+export AGMEM_HOOK_SOURCE=codex
+export AGMEM_NO_DAEMON=1
+if [ "$hook" = distill ]; then
+  export AGMEM_HOOK_TIMEOUT_SEC=1.5
+else
+  export AGMEM_HOOK_TIMEOUT_SEC="${AGMEM_HOOK_TIMEOUT_SEC:-5}"
+fi
+memory_python="${AGMEM_PYTHON:-$HOME/agentic_memory/.venv/bin/python}"
+if [ ! -x "$memory_python" ]; then
+  printf 'agent-memory-hook: Python installation missing; memory hook skipped\n' >&2
+  exit 0
+fi
+exec "$memory_python" -m "agmem.hooks.$hook"

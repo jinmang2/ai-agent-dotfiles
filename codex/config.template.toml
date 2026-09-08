@@ -36,16 +36,16 @@ max_depth = 2
 # 고를 수 있는 항목은 19개이고 OMX 는 그중 7개만 배선해둔다 — estimated-thread-cost
 # 같은 건 아예 없다. codex 안에서 `/statusline` 을 치면 전체 목록을 검색하며 고를 수 있다.
 #
-# 고르는 기준은 "수시로 변하는가" 다.
-#   넣음   git-branch · context-remaining · used-tokens · estimated-thread-cost
-#          five-hour-limit · weekly-limit
+# 고르는 기준은 "컨텍스트/한도 우선, 그 다음 비용/위치" 다.
+#   넣음   context-remaining · five-hour-limit · weekly-limit · used-tokens
+#          estimated-thread-cost · git-branch
 #   뺌     model-with-reasoning   혼자 20칸 가까이 먹는데 모델은 자주 안 바뀐다 (/model)
 #          total-input/output     used-tokens 한 칸으로 합쳐진다
 #          project-name·current-dir   tmux 창 이름이 이미 저장소를 보여준다 (중복)
 #          context-used           context-remaining 의 반대. 둘 다 넣을 이유가 없다
 status_line = [
-  "git-branch", "context-remaining", "used-tokens",
-  "estimated-thread-cost", "five-hour-limit", "weekly-limit",
+  "context-remaining", "five-hour-limit", "weekly-limit",
+  "used-tokens", "estimated-thread-cost", "git-branch",
 ]
 
 # omo 플러그인 (sisyphuslabs 마켓플레이스).  어떤 MCP 서버를 켜고 끌지는 내 선택이라 이식한다.
@@ -58,6 +58,12 @@ enabled = true
 context7 = { enabled = true }
 codegraph = { enabled = true }
 git_bash = { enabled = false }
+
+[mcp_servers.agentic_memory]
+url = "http://127.0.0.1:8765/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+required = false
 
 # ── 의도적으로 제외한 것 ────────────────────────────────────
 #

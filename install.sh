@@ -36,6 +36,11 @@ agent/window-label.sh|$HOME/.local/bin/agent-window-label
 agent/guard.py|$HOME/.local/bin/agent-guard
 agent/statusline|$HOME/.local/bin/agent-statusline
 agent/hud-cacheline.py|$HOME/.local/bin/agent-hud-cacheline
+agent/codex-hud.py|$HOME/.local/bin/agent-codex-hud
+agent/codex-hud-launcher|$HOME/.local/bin/agent-codex-hud-launcher
+agent/memory-hook|$HOME/.local/bin/agent-memory-hook
+agent/memory-daemon|$HOME/.local/bin/agent-memory-daemon
+agent/agentic-memory.service|$HOME/.config/systemd/user/agentic-memory.service
 agent/usage.py|$HOME/.local/bin/agent-usage
 agent/profiles.conf|$HOME/.config/agent-profiles.conf
 agent/label-of.sh|$HOME/.config/agent-dotfiles/label-of.sh
@@ -246,6 +251,12 @@ fi
 # 끝에 붙이는 이유: 신뢰 상태 키가 "<파일>:<이벤트>:<블록번호>:0" 이라, 앞에 끼우면
 # 기존 OMX 훅 7개의 승인이 전부 무효가 된다.
 if [ -f "$HOME/.codex/hooks.json" ]; then
+  if python3 "$REPO/scripts/codex-wiring.py" --check --live --workflow-owner omx; then
+    printf '  ok     Codex 설정/메모리 훅 (정적 검사; 연결·신뢰 검사는 별도)\n'; ok=$((ok+1))
+  else
+    warn=$((warn+1))
+    printf '  갱신필요 Codex 배선: python3 scripts/codex-wiring.py --apply --live --workflow-owner omx\n'
+  fi
   # 스키마부터 본다.  codex 는 최상위에 description|hooks 만 받는데, 옛 버전이 남긴
   # state (신뢰 해시) 가 남아 있으면 **파일 전체가 조용히 무시된다** — 실제로 그 상태로
   # 얼마간 돌고 있었고, /hooks 화면을 열기 전까지 아무도 몰랐다.

@@ -1,0 +1,15 @@
+[Unit]
+Description=Shared agentic-memory for Claude and Codex
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/agent-memory-daemon
+EnvironmentFile=-%h/.config/agent-dotfiles/memory.env
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=60
+UMask=0077
+
+[Install]
+WantedBy=default.target
