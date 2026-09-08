@@ -53,12 +53,6 @@ if [ -n "$state" ]; then
   esac
 fi
 
-# --- 조기 탈출: 이미 같은 상태면 아무것도 하지 않는다 ---
-# PostToolUse 는 도구 호출마다 불리므로, 연타되는 경우 tmux show 한 번으로 끝낸다.
-if [ -n "$state" ] && [ "$state" = "$(tmux show -w -t "$TMUX_PANE" -v @cc 2>/dev/null)" ]; then
-  exit 0
-fi
-
 # --- 상태 기호: 상태줄에서 1칸.  이모지(2칸)를 쓰지 않는 게 요점이다 ---
 case "$state" in
   busy)    sym='#[fg=colour214,bold]»' ;;
@@ -85,6 +79,20 @@ if [ -r "$CONF" ]; then
     fi
   done < "$CONF"
 fi
+expected_color=""
+[ -n "$color" ] && expected_color="bg=$color,fg=colour235"
+
+# --- 조기 탈출: 상태줄에 보이는 필드까지 이미 같을 때만 아무것도 하지 않는다 ---
+# PostToolUse 는 도구 호출마다 불린다.  다만 tmux.conf 는 @cc 가 아니라 @cc_sym 과
+# @cc_color 를 그리므로, @cc 만 같다고 빠지면 깨진 상태줄 필드를 복구하지 못한다.
+if [ -n "$state" ] \
+  && [ "$state" = "$(tmux show -w -t "$TMUX_PANE" -v @cc 2>/dev/null)" ] \
+  && [ "$sym" = "$(tmux show -w -t "$TMUX_PANE" -v @cc_sym 2>/dev/null)" ]; then
+  if [ -z "$expected_color" ] \
+    || [ "$expected_color" = "$(tmux show -w -t "$TMUX_PANE" -v @cc_color 2>/dev/null)" ]; then
+    exit 0
+  fi
+fi
 
 # 라벨 규칙이 없으면 이름을 짓지 않는다. 훅이 실패해도 에이전트 쪽엔 영향이 없어야
 # 하므로 조용히 빠진다 (./install.sh --check 가 링크 끊김을 잡아준다).
@@ -107,7 +115,7 @@ tmux rename-window -t "$TMUX_PANE" "$label" 2>/dev/null
 # 여기서 색까지 남기면 에이전트 없는 창이 프로필 색을 달고, 셸 쪽 청소는 @cc 가
 # 있을 때만 돌아서 그 색이 영원히 굳는다.
 if [ -n "$state" ]; then
-  [ -n "$color" ] && tmux set -w -t "$TMUX_PANE" @cc_color "bg=$color,fg=colour235" 2>/dev/null
+  [ -n "$expected_color" ] && tmux set -w -t "$TMUX_PANE" @cc_color "$expected_color" 2>/dev/null
   tmux set -w -t "$TMUX_PANE" @cc "$state" 2>/dev/null
   tmux set -w -t "$TMUX_PANE" @cc_sym "$sym" 2>/dev/null
 fi

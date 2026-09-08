@@ -57,6 +57,12 @@ class WindowLabel(unittest.TestCase):
     def cc(self) -> str:
         return tmux("show", "-w", "-t", self.pane, "-v", "@cc")
 
+    def cc_sym(self) -> str:
+        return tmux("show", "-w", "-t", self.pane, "-v", "@cc_sym")
+
+    def cc_color(self) -> str:
+        return tmux("show", "-w", "-t", self.pane, "-v", "@cc_color")
+
     def test_1_저장소_안이면_저장소_이름과_상태를_남긴다(self):
         self.hook("busy", str(REPO))
         self.assertEqual(self.name(), "ai-agent-dotfiles")
@@ -119,6 +125,14 @@ class WindowLabel(unittest.TestCase):
         finally:
             os.rmdir(nested)
         self.assertEqual(self.cc(), "busy", "뒤에 나온 cwd 가 앞의 것을 덮으면 임시 판정이 뚫린다")
+
+    def test_8_상태가_같아도_상태줄_필드는_복구한다(self):
+        self.hook("busy", str(REPO))
+        tmux("set", "-w", "-t", self.pane, "-u", "@cc_sym")
+        tmux("set", "-w", "-t", self.pane, "-u", "@cc_color")
+        self.hook("busy", str(REPO))
+        self.assertIn("»", self.cc_sym(), "상태가 같아도 상태줄 기호는 복구되어야 한다")
+        self.assertEqual(self.cc_color(), "bg=colour208,fg=colour235")
 
     def test_4_세션이_끝나면_done_이_남는다(self):
         self.hook("busy", str(REPO))
